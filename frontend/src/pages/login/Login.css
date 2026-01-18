@@ -1,0 +1,158 @@
+/* body{
+    background-color: red;
+} */
+
+/* Page wrapper */
+.login-wrapper {
+  min-height: 100vh;
+  background: #f7f7f7;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  font-family: "Manrope", sans-serif;
+  padding: 16px;
+}
+
+/* Login card */
+.login-card {
+  background: #ffffff;
+  width: 100%;
+  max-width: 440px;
+  border-radius: 16px;
+  padding: 32px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.08);
+  z-index: 1;
+}
+
+/* Header */
+.login-header {
+  text-align: center;
+  margin-bottom: 32px;
+}
+
+.logo-box {
+  width: 306px;
+  height: 56px;
+  margin: 0 auto 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+
+.login-header h1 {
+  font-size: 28px;
+  font-weight: 750;
+  margin-bottom: 6px;
+  color: #0000FF;
+}
+
+.login-header p {
+  font-size: 14px;
+  color: #6b6284;
+}
+
+/* Form */
+.login-form {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.form-group label {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.form-group input {
+  height: 48px;
+  border-radius: 10px;
+  border: 1px solid #e0e0e0;
+  padding: 0 14px;
+  font-size: 14px;
+}
+
+.form-group input:focus {
+  outline: none;
+  border-color: #3f2f6a;
+  box-shadow: 0 0 0 2px rgba(63, 47, 106, 0.15);
+}
+
+/* Forgot password
+.forgot-password {
+  text-align: right;
+}
+
+.forgot-password a {
+  font-size: 13px;
+  font-weight: 700;
+  color: #3f2f6a;
+  text-decoration: none;
+}
+
+.forgot-password a:hover {
+  text-decoration: underline;
+} */
+
+/* Button */
+.login-btn {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 10px;
+  height: 48px;
+  background: #0000FF;
+  color: white;
+  font-weight: 700;
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: background 0.3s ease;
+}
+
+.login-btn img{
+  height: 20px;
+}
+
+.login-btn:hover {
+  background: #10169f;
+}
+
+/* Footer */
+.login-footer {
+  margin-top: 32px;
+  padding-top: 20px;
+  border-top: 1px solid #eee;
+  text-align: center;
+}
+
+.login-footer p {
+  font-size: 12px;
+  color: #6b6284;
+  margin-bottom: 6px;
+}
+
+.login-footer a {
+  font-size: 14px;
+  font-weight: 700;
+  color: #131117;
+  text-decoration: none;
+}
+
+.login-footer a:hover {
+  color: #3f2f6a;
+}
+
+.login-footer small {
+  display: block;
+  margin-top: 20px;
+  font-size: 11px;
+  color: #ccc;
+}
