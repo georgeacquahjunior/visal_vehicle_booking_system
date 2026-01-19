@@ -1,6 +1,6 @@
 import React from "react";
 import "./Booking.css";
-import logo from '../../assets/visal_logo.webp'
+import Navbar from "../../components/navbar/Navbar";
 
 function Booking() {
     
@@ -8,24 +8,6 @@ function Booking() {
 
   return (
     <div className="booking-page">
-      {/* Sidebar */}
-      <aside className="sidebar">
-        <div className="brand">
-          <img src={logo} alt="" />
-          <div>
-            <h2>Visal Vehicle Booking</h2>
-            <p>Staff Portal</p>
-          </div>
-        </div>
-
-        <nav className="nav">
-          <a href="#" className="active">New Booking</a>
-          <a href="#">View Schedule</a>
-          <a href="#">My Bookings</a>
-          <a href="#" className="logout">Log Out</a>
-        </nav>
-      </aside>
-
       {/* Main Content */}
       <main className="main">
         <header className="header">

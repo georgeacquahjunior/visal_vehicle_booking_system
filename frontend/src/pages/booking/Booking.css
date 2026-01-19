@@ -5,60 +5,6 @@
   background: #f7f7f7;
 }
 
-/* Sidebar */
-.sidebar {
-  width: 280px;
-  background: #ffffff;
-  border-right: 1px solid #e5e7eb;
-  padding: 20px;
-}
-
-.brand {
-  display: flex;
-  gap: 12px;
-  margin-bottom: 40px;
-}
-
-.brand img {
-  width: 70px;
-  height: 80px;
-}
-
-.brand h2{
-    font-size: 24px;
-    color: #0000ff;
-    text-align: center;
-}
-
-.brand p{
-    color: #555;
-    margin-top: 10px;
-    text-align: center;
-}
-
-.nav a {
-  display: block;
-  padding: 12px;
-  margin-bottom: 6px;
-  color: #555;
-  text-decoration: none;
-  border-radius: 8px;
-}
-
-.nav a.logout {
-  color: red;
-}
-
-.nav a.logout:hover {
-  background: #dc262631;
-  color: red;
-}
-
-.nav a.active,
-.nav a:hover {
-  background: #ede9fe;
-  color: #0000ff;
-}
 
 
 /* Main */
