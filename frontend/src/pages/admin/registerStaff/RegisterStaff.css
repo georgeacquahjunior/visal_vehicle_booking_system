@@ -1,0 +1,161 @@
+
+/* Reset */
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  font-family: "Manrope", sans-serif;
+}
+
+body {
+  background: #f6f7f8;
+  color: #0f172a;
+}
+
+/* Layout */
+.layout {
+  display: flex;
+  height: 100vh;
+}
+
+/* Sidebar */
+.sidebar {
+  width: 280px;
+  background: #ffffff;
+  border-right: 1px solid #e2e8f0;
+  padding: 24px;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 40px;
+}
+
+.brand .icon {
+  font-size: 32px;
+  color: #1d4f67;
+}
+
+.brand h1 {
+  font-size: 18px;
+  font-weight: 800;
+}
+
+.brand p {
+  font-size: 12px;
+  color: #64748b;
+}
+
+/* Navigation */
+.nav {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.nav-item {
+  padding: 12px 16px;
+  border-radius: 8px;
+  cursor: pointer;
+  color: #475569;
+  font-weight: 600;
+}
+
+.nav-item:hover {
+  background: #f1f5f9;
+}
+
+.nav-item.active {
+  background: rgba(29, 79, 103, 0.1);
+  color: #1d4f67;
+}
+
+/* Main */
+.main {
+  flex: 1;
+  padding: 40px;
+  overflow-y: auto;
+}
+
+.page-header h2 {
+  font-size: 32px;
+  font-weight: 800;
+  margin-bottom: 8px;
+}
+
+.page-header p {
+  color: #64748b;
+  margin-bottom: 32px;
+}
+
+/* Card */
+.card {
+  background: #ffffff;
+  border-radius: 16px;
+  padding: 32px;
+  max-width: 600px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
+}
+
+/* Form */
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.form-group label {
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.form-group input {
+  height: 44px;
+  padding: 0 14px;
+  border-radius: 8px;
+  border: 1px solid #cbd5f5;
+  background: #f8fafc;
+}
+
+.form-group input:focus {
+  outline: none;
+  border-color: #1d4f67;
+}
+
+/* Actions */
+.actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 20px;
+}
+
+.btn-secondary {
+  background: transparent;
+  border: none;
+  color: #475569;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.btn-primary {
+  background: #1d4f67;
+  color: white;
+  border: none;
+  padding: 12px 24px;
+  border-radius: 8px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.btn-primary:hover {
+  background: #163d50;
+}

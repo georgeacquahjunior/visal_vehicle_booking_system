@@ -1,24 +1,24 @@
-import './Navbar.css'
-import logo from '../../assets/visal_logo.webp'
+import './AdminNavbar.css'
+import logo from '../../../assets/visal_logo.webp'
 import { NavLink} from 'react-router-dom';
 
-function Navbar() {
+function AdminNavbar() {
   return (
     <div>
-        {/* Sidebar */}
+          {/* Sidebar */}
       <aside className="sidebar">
         <div className="brand">
           <img src={logo} alt="" />
           <div>
             <h2>Visal Vehicle Booking</h2>
-            <p>Staff Portal</p>
+            <p>Admin Portal</p>
           </div>
         </div>
 
         <nav className="nav">
-            <NavLink to="/booking" end>New Booking</NavLink>
-            <NavLink to="scheduleview">View Schedule</NavLink>
-            <NavLink to="viewbookings">My Bookings</NavLink>
+            <NavLink to="/admin_dashboard" end>Dashboard</NavLink>
+            <NavLink to="approvals">Approvals</NavLink>
+            <NavLink to="reports">Reports</NavLink>
             <NavLink to="/" className="logout">Log Out</NavLink>
         </nav>
       </aside>
@@ -26,4 +26,4 @@ function Navbar() {
   )
 }
 
-export default Navbar
+export default AdminNavbar

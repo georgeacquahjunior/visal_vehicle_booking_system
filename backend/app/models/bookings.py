@@ -7,7 +7,7 @@ class Booking(db.Model):
     id = db.Column(db.Integer, primary_key=True)  # SERIAL PRIMARY KEY
     user_id = db.Column(
         db.Integer,
-        db.ForeignKey("users.id", ondelete="CASCADE"),
+        db.ForeignKey("users.staff_id", ondelete="CASCADE"),
         nullable=False
     )  # Foreign key to users
     booking_date = db.Column(db.Date, nullable=False)

@@ -1,0 +1,323 @@
+/* ------------------------------
+   Global Page Styles
+------------------------------ */
+.view-bookings {
+  padding: 24px;
+  background-color: #f7f7f7;
+  min-height: 100vh;
+  font-family: "Inter", sans-serif;
+  color: #131117;
+}
+
+/* ------------------------------
+   Header
+------------------------------ */
+.vb-header h1 {
+  font-size: 28px;
+  font-weight: 700;
+  margin-bottom: 4px;
+}
+
+.vb-header p {
+  font-size: 14px;
+  color: #6b6284;
+  margin: 0;
+  font-weight: 500;
+}
+
+/* ------------------------------
+   Stats Cards
+------------------------------ */
+.vb-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 16px;
+  margin: 24px 0;
+}
+
+.stat-card {
+  background: #fff;
+  border-radius: 12px;
+  padding: 16px;
+  border-left: 4px solid #d9d6e1;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  text-align: center;
+  transition: all 0.2s;
+}
+
+.stat-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+.stat-card.approved { border-left-color: #10b981; }
+.stat-card.pending { border-left-color: #f59e0b; }
+.stat-card.completed { border-left-color: #06b6d4; }
+.stat-card.cancelled { border-left-color: #ef4444; }
+
+.stat-number {
+  font-size: 22px;
+  font-weight: 700;
+  margin-bottom: 4px;
+}
+
+.stat-label {
+  font-size: 12px;
+  color: #6b6284;
+  text-transform: uppercase;
+  font-weight: 600;
+}
+
+/* ------------------------------
+   Filters
+------------------------------ */
+.vb-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 24px;
+}
+
+.search-input {
+  flex: 1;
+  padding: 10px 16px;
+  border-radius: 8px;
+  border: 1px solid #d9d6e1;
+  font-size: 14px;
+}
+
+.status-filter {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.filter-btn {
+  padding: 6px 12px;
+  border: 1px solid #d9d6e1;
+  border-radius: 8px;
+  background: #fff;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.filter-btn.active,
+.filter-btn:hover {
+  background: #3f2f6a;
+  color: #fff;
+  border-color: #3f2f6a;
+}
+
+/* ------------------------------
+   Bookings Grid & Card
+------------------------------ */
+.bookings-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 16px;
+}
+
+.booking-item {
+  background: #fff;
+  border-radius: 12px;
+  padding: 16px;
+  border-left: 5px solid #d9d6e1;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  transition: all 0.2s;
+}
+
+.booking-item:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.booking-item.approved { border-left-color: #10b981; }
+.booking-item.pending { border-left-color: #f59e0b; }
+.booking-item.completed { border-left-color: #06b6d4; }
+.booking-item.cancelled { border-left-color: #ef4444; opacity: 0.7; }
+
+.booking-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.booking-header h3 {
+  font-size: 16px;
+  font-weight: 600;
+  margin: 0;
+}
+
+.booking-header p {
+  font-size: 12px;
+  color: #6b6284;
+  margin: 0;
+}
+
+.status-badge {
+  font-size: 10px;
+  font-weight: 700;
+  padding: 4px 8px;
+  border-radius: 20px;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.status-badge.approved { background: #d1fae5; color: #065f46; }
+.status-badge.pending { background: #fef3c7; color: #92400e; }
+.status-badge.completed { background: #cffafe; color: #164e63; }
+.status-badge.cancelled { background: #fee2e2; color: #7f1d1d; }
+
+/* Booking Details */
+.booking-details div {
+  font-size: 13px;
+  color: #131117;
+}
+
+.booking-details strong {
+  color: #6b6284;
+  margin-right: 4px;
+}
+
+/* Booking Footer */
+.booking-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 11px;
+  color: #999;
+}
+
+.btn-view {
+  background: #3f2f6a;
+  color: #fff;
+  border: none;
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.btn-view:hover {
+  background: #554486;
+}
+
+/* ------------------------------
+   Empty State
+------------------------------ */
+.empty-state {
+  text-align: center;
+  padding: 60px 20px;
+  background: #fff;
+  border-radius: 12px;
+}
+
+.empty-icon {
+  font-size: 48px;
+  color: #d9d6e1;
+  margin-bottom: 12px;
+}
+
+/* ------------------------------
+   Dialog
+------------------------------ */
+.dialog-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.dialog {
+  background: #fff;
+  border-radius: 12px;
+  max-width: 500px;
+  width: 90%;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.dialog-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.dialog-close {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 20px;
+  color: #999;
+}
+
+.dialog-close:hover {
+  color: #131117;
+}
+
+.dialog-content p {
+  margin: 4px 0;
+  font-size: 14px;
+}
+
+/* Dialog Footer */
+.dialog-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.btn-secondary {
+  background: #f7f7f7;
+  color: #131117;
+  border: 1px solid #d9d6e1;
+  padding: 6px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.btn-secondary:hover {
+  background: #e5e5e5;
+}
+
+/* ------------------------------
+   Responsive
+------------------------------ */
+@media (max-width: 768px) {
+  .vb-stats {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+  }
+
+  .bookings-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .vb-filters {
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .booking-footer {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 6px;
+  }
+}
+
+@media (max-width: 480px) {
+  .vb-header h1 { font-size: 22px; }
+  .booking-header h3 { font-size: 14px; }
+  .booking-header p { font-size: 11px; }
+  .btn-view { padding: 5px 10px; font-size: 11px; }
+}

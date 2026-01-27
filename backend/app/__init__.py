@@ -1,9 +1,12 @@
 # app/__init__.py
 from flask import Flask
-from .extensions import db, migrate  # note the dot, meaning "current package"
+from .extensions import db, migrate
+from flask_cors import CORS
 
 def create_app(config_class=None):
     app = Flask(__name__)
+    CORS(app)
+
 
     # Load config
     if config_class is None:
@@ -22,8 +25,8 @@ def create_app(config_class=None):
 
     # Register blueprints
     from .routes.auth import auth_bp
-    # from .routes.bookings import booking_bp
+    from .routes.bookings import bookings_bp
     app.register_blueprint(auth_bp)
-    # app.register_blueprint(booking_bp)
+    app.register_blueprint(bookings_bp)
 
     return app

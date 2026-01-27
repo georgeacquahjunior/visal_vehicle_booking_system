@@ -1,0 +1,62 @@
+.admin-dashboard {
+  padding: 2rem;
+}
+
+.dashboard-title {
+  margin-bottom: 1.5rem;
+}
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+}
+
+.stat-card {
+  background: #ffffff;
+  padding: 1.5rem;
+  border-radius: 8px;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+}
+
+.stat-card p {
+  font-size: 2rem;
+  font-weight: bold;
+}
+
+.vehicle-status,
+.recent-bookings {
+  background: #ffffff;
+  margin-top: 2rem;
+  padding: 1.5rem;
+  border-radius: 8px;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 1rem;
+}
+
+th, td {
+  padding: 0.75rem;
+  border-bottom: 1px solid #eee;
+}
+
+.pending {
+  color: orange;
+}
+
+.approved {
+  color: green;
+}
+
+.approve-btn {
+  background: #2563eb;
+  color: white;
+  border: none;
+  padding: 0.4rem 0.8rem;
+  border-radius: 4px;
+  cursor: pointer;
+}
