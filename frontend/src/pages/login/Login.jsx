@@ -7,7 +7,7 @@ import Footer from "../../components/footer/Footer";
 
 function Login() {
   const navigate = useNavigate();
-
+0
 
   // Form state
   const [staff_id, setStaffId] = useState("");
@@ -28,15 +28,15 @@ function Login() {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        staff_id,
-        password,
+        staff_id: staff_id.trim(),
+        password: password.trim(),
       }),
     });
 
     const data = await response.json();
 
     if (!response.ok) {
-      setError(data.message || "Login failed");
+      setError(data.error || "Wrong Credentials");
     } else {
       console.log("Login success:", data);
 
@@ -68,12 +68,12 @@ function Login() {
             <img src={logo} alt="visal logo" />
           </div>
           <h1>VISAL VEHICLE BOOKING</h1>
-          <p>Please enter your details to sign in to vehicle booking portal.</p>
+          <p>Please enter your details to sign in to the vehicle booking portal.</p>
         </div>
 
         {/* Form */}
         <form className="login-form" onSubmit={handleSubmit}>
-          <div className="form-group">
+          <div className="form-group-login">
             <label>Staff/Admin ID</label>
             <input
               type="text"
@@ -84,7 +84,7 @@ function Login() {
             />
           </div>
 
-          <div className="form-group">
+          <div className="form-group-login">
             <label>Password</label>
             <input
               type="password"
@@ -95,14 +95,13 @@ function Login() {
             />
           </div>
 
-          {error && <p className="error-text">{error}</p>}
+          {error && <p className="error-text-login"><i class="fa-solid fa-circle-info"></i>  {error}</p>}
 
           <button type="submit" className="login-btn" disabled={loading}>
             {loading ? "Signing In..." : "Sign In"}{" "}
             <img src={arrow_forward} alt="arrow forward" />
           </button>
-        </form>
-
+        </form> 
         <Footer />
         
       </div>
