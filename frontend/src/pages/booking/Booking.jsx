@@ -1,5 +1,8 @@
 import React, { useState } from "react";
 import "./Booking.css";
+import { timeWindowValidation } from "../../utils/bookings";
+import BookingModal from "../../components/bookingModal/BookingModal";
+
 
 function Booking() {
   const today = new Date().toISOString().split("T")[0];
@@ -14,78 +17,86 @@ function Booking() {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
 
+  // Function to format full date
+  const formatFullDate = (dateString) => {
+    if (!dateString) return "";
+    const date = new Date(dateString);
+    return date.toLocaleDateString("en-US", {
+      weekday: "long",
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+    });
+  };
+
+  // Validation
   const validateBooking = () => {
-      if (!startTime) return "Start time is required";
-      if (!endTime) return "End time is required";
+    const timeError = timeWindowValidation(startTime, endTime);
+    if (timeError) return timeError;
 
-      if (startTime >= endTime) {
-        return "End time must be after start time";
-      }
+    if (!location.trim()) return "Destination is required";
+    if (!purpose.trim()) return "Purpose is required";
 
-      if (!location.trim()) return "Destination is required";
-      if (!purpose.trim()) return "Purpose is required";
+    const user_id = Number(localStorage.getItem("staff_id"));
+    if (!user_id) return "You must be logged in to create a booking";
 
-      const user_id = Number(localStorage.getItem("staff_id"));
-      if (!user_id) return "You must be logged in to create a booking";
+    return null; // validation passed
+  };
 
-      return null; // ✅ means validation passed
-};
+  // Submit Handler
+  const handleSubmit = async (e) => {
+    e.preventDefault();
 
-
- const handleSubmit = async (e) => {
-  e.preventDefault();
-
-  const validationError = validateBooking();
-  if (validationError) {
-    setError(validationError);
-    return;
-  }
-
-  setLoading(true);
-  setError("");
-  setSuccess("");
-
-  const user_id = Number(localStorage.getItem("staff_id"));
-
-  try {
-    const response = await fetch(
-      "http://127.0.0.1:5000/bookings/create_booking",
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          user_id,
-          booking_date: bookingDate,
-          start_time: startTime,
-          end_time: endTime,
-          location,
-          purpose,
-          notes,
-        }),
-      }
-    );
-
-    const data = await response.json();
-
-    if (!response.ok) {
-      setError(data.error || "Failed to create booking");
-    } else {
-      setSuccess("Booking request submitted successfully!");
-      setStartTime("");
-      setEndTime("");
-      setLocation("");
-      setPurpose("Client Meeting");
-      setNotes("");
+    const validationError = validateBooking();
+    if (validationError) {
+      setError(validationError);
+      return;
     }
-  } catch (err) {
-    setError("Network error. Please try again.");
-  } finally {
-    setLoading(false);
-  }
-};
 
+    setLoading(true);
+    setError("");
+    setSuccess("");
+
+    const user_id = Number(localStorage.getItem("staff_id"));
+
+    try {
+      const response = await fetch(
+        "http://127.0.0.1:5000/bookings/create_booking",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            user_id,
+            booking_date: bookingDate,
+            start_time: startTime,
+            end_time: endTime,
+            location,
+            purpose,
+            notes,
+          }),
+        }
+      );
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        setError(data.error || "Failed to create booking");
+      } else {
+        setSuccess("Booking request submitted successfully for approval!");
+        setStartTime("");
+        setEndTime("");
+        setLocation("");
+        setPurpose("Client Meeting");
+        setNotes("");
+      }
+    } catch (err) {
+      setError("Network error. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <div className="booking-page">
@@ -98,11 +109,10 @@ function Booking() {
         <form className="card" onSubmit={handleSubmit}>
           <section>
             <h3>Schedule</h3>
-
             <div className="grid-3">
               <div>
                 <label>Booking Date</label>
-                <input type="date" value={bookingDate} readOnly />
+                <input type="text" value={formatFullDate(bookingDate)} readOnly />
                 <p><i className="fa-solid fa-circle-info"></i> automatically selected date</p>
               </div>
 
@@ -114,6 +124,7 @@ function Booking() {
                   onChange={(e) => setStartTime(e.target.value)}
                   required
                 />
+                <p><i className="fa-solid fa-circle-info"></i> start time is 09:00 AM by default</p>
               </div>
 
               <div>
@@ -124,13 +135,13 @@ function Booking() {
                   onChange={(e) => setEndTime(e.target.value)}
                   required
                 />
+                <p><i className="fa-solid fa-circle-info"></i> end time is 4:00 PM by default</p>
               </div>
             </div>
           </section>
 
           <section>
             <h3>Trip Details</h3>
-
             <div className="grid-2">
               <div>
                 <label>Destination</label>
@@ -154,7 +165,7 @@ function Booking() {
                   <option>Official Duty</option>
                 </select>
               </div>
-            </div><br />
+            </div>
 
             <div>
               <label>Additional Notes</label>
@@ -166,15 +177,30 @@ function Booking() {
             </div>
           </section>
 
-          {error && <p className="error-text">{error}</p>}
-          {success && <p className="success-text">{success}</p>}
-
-          <div className="actions">
+          <div className="actions-bookings">
+            <p className="booking-info">
+              Successfully submitted bookings will be sent as Pending for approval by the Administrator
+            </p>
             <button type="submit" className="submit" disabled={loading}>
               {loading ? "Submitting..." : "Submit Request"}
             </button>
           </div>
         </form>
+
+        {/* Error Modal */}
+        <BookingModal
+          message={error}
+          onClose={() => setError("")}
+          type="error"
+        />
+
+        {/* Success Modal */}
+        <BookingModal
+          message={success}
+          onClose={() => setSuccess("")}
+          type="success"
+        />
+
 
         <footer className="footer">
           © 2026 Visal Vehicle System. All rights reserved. | Vaarde Consult
