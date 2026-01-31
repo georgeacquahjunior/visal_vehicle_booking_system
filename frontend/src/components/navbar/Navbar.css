@@ -6,30 +6,30 @@
   padding: 20px;
 }
 
-.brand {
+.brand-login {
   display: flex;
   gap: 12px;
   margin-bottom: 40px;
 }
 
-.brand img {
+.brand-login img {
   width: 70px;
   height: 80px;
 }
 
-.brand h2{
+.brand-login h2{
     font-size: 24px;
     color: #0000ff;
     text-align: center;
 }
 
-.brand p{
+.brand-login p{
     color: #555;
     margin-top: 10px;
     text-align: center;
 }
 
-.nav a {
+.nav-login a {
   display: block;
   padding: 12px;
   margin-bottom: 6px;
@@ -38,17 +38,21 @@
   border-radius: 8px;
 }
 
-.nav a.logout {
+.nav-login a.logout {
   color: red;
 }
 
-.nav a.logout:hover {
+.nav-login a.logout:hover {
   background: #dc262631;
   color: red;
 }
 
-.nav a.active,
-.nav a:hover {
-  background: #ede9fe;
+.nav-login a.active,
+.nav-login a:hover {
+  background: #d6ecff;
   color: #0000ff;
+}
+
+.nav-login i{
+  margin-right: 15px;
 }
