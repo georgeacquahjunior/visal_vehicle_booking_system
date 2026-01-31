@@ -1,5 +1,3 @@
-// Modal.js
-import React from "react";
 import "./BookingModal.css";
 
 const BookingModal = ({ message, onClose, type = "error" }) => {
