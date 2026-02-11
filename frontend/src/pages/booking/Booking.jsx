@@ -101,7 +101,7 @@ function Booking() {
   return (
     <div className="booking-page">
       <main className="main">
-        <header className="header">
+        <header className="booking-header" >
           <h1>New Booking Request</h1>
           <p>Fill in the details below to request a vehicle.</p>
         </header>
@@ -178,8 +178,8 @@ function Booking() {
           </section>
 
           <div className="actions-bookings">
-            <p className="booking-info">
-              Successfully submitted bookings will be sent as Pending for approval by the Administrator
+            <p className="booking-info"><i className="fa-solid fa-circle-info"></i>
+              Submitted bookings will be sent as Pending for approval
             </p>
             <button type="submit" className="submit" disabled={loading}>
               {loading ? "Submitting..." : "Submit Request"}
