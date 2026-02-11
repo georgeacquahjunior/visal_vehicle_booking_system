@@ -4,10 +4,10 @@ import logo from '../../assets/visal_logo.webp';
 import arrow_forward from '../../assets/arrow_forward.svg';
 import { useNavigate } from "react-router-dom";
 import Footer from "../../components/footer/Footer";
+import { loginUser } from "../../utils/login";
 
 function Login() {
   const navigate = useNavigate();
-0
 
   // Form state
   const [staff_id, setStaffId] = useState("");
@@ -15,48 +15,11 @@ function Login() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  // Handle form submission
-  const handleSubmit = async (e) => {
-  e.preventDefault();
-  setLoading(true);
-  setError("");
-
-  try {
-    const response = await fetch("http://127.0.0.1:5000/auth/login", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        staff_id: staff_id.trim(),
-        password: password.trim(),
-      }),
-    });
-
-    const data = await response.json();
-
-    if (!response.ok) {
-      setError(data.error || "Wrong Credentials");
-    } else {
-      console.log("Login success:", data);
-
-      localStorage.setItem("staff_id", data.staff_id);
-      localStorage.setItem("role", data.role);
-
-      //Role-based navigation
-      if (data.role === "admin") {
-        navigate("/admin_dashboard");
-      } else {
-        navigate("/booking");
-      }
-    }
-  } catch (err) {
-    console.error("Error logging in:", err);
-    setError("Network error. Please try again.");
-  } finally {
-    setLoading(false);
-  }
-};
+  // Handle form submission using the helper
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    loginUser(staff_id, password, setError, setLoading, navigate);
+  };
 
 
   return (
@@ -95,7 +58,7 @@ function Login() {
             />
           </div>
 
-          {error && <p className="error-text-login"><i class="fa-solid fa-circle-info"></i>  {error}</p>}
+          {error && <p className="error-text-login"><i className="fa-solid fa-circle-info"></i>  {error}</p>}
 
           <button type="submit" className="login-btn" disabled={loading}>
             {loading ? "Signing In..." : "Sign In"}{" "}
@@ -103,7 +66,6 @@ function Login() {
           </button>
         </form> 
         <Footer />
-        
       </div>
     </main>
   );
