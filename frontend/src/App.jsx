@@ -10,6 +10,7 @@ import Dashboard from './pages/admin/dashboard/Dashboard'
 import Approvals from './pages/admin/approvals/Approvals'
 import Reports from './pages/admin/reports/Reports'
 import ProtectedRoute from './pages/login/ProtectedRoutes'
+import RegisterStaff from './pages/admin/registerStaff/RegisterStaff'
 
 function App() {
   return (
@@ -21,9 +22,10 @@ function App() {
           <Route path="scheduleview" element={<ScheduleView />} />
           <Route path="viewbookings" element={<ViewBookings />} />
         </Route>
-        <Route path="/admin_dashboard" element={<AdminRootLayout />}>
+        <Route path="/admin_dashboard" element={<ProtectedRoute ><AdminRootLayout /></ProtectedRoute>}>
           <Route index element={<Dashboard />} />
           <Route path="approvals" element={<Approvals />} />
+          <Route path="register_staff" element={<RegisterStaff />} />
           <Route path="reports" element={<Reports />} />
         </Route>
       </Routes>
