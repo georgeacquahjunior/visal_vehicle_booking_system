@@ -53,10 +53,21 @@ th, td {
 }
 
 .approve-btn {
-  background: #2563eb;
+  background: rgb(0, 128, 75);
   color: white;
   border: none;
   padding: 0.4rem 0.8rem;
   border-radius: 4px;
+  cursor: pointer;
+  margin-left: 10px;
+}
+
+.decline-btn {
+  background: #eb2c25;
+  color: white;
+  border: none;
+  padding: 0.4rem 0.8rem;
+  border-radius: 4px;
+  margin-left: 20px;
   cursor: pointer;
 }
