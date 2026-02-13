@@ -18,7 +18,8 @@ function AdminNavbar() {
         <nav className="nav">
             <NavLink to="/admin_dashboard" end>Dashboard</NavLink>
             <NavLink to="approvals">Approvals</NavLink>
-            <NavLink to="reports">Reports</NavLink>
+            <NavLink to="register_staff">Register Staff</NavLink>
+            {/* <NavLink to="reports">Reports</NavLink> */}
             <NavLink to="/" className="logout">Log Out</NavLink>
         </nav>
       </aside>
