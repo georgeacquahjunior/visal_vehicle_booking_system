@@ -3,14 +3,14 @@ import { Outlet } from 'react-router-dom'
 
 function AdminRootLayout() {
   return (
-    <div>
-        <div style={{ display: 'flex' }}>
-                <AdminNavbar />
-                <div style={{ flex: 1 }}>
-                    <Outlet />   
-                </div>
-            </div>
-    </div>
+  
+  <div style={{ display: 'flex', minHeight: '100vh', alignItems: 'stretch' }}>
+      <AdminNavbar />
+      <div style={{ flex: 1, minHeight: '100vh' }}>
+        <Outlet />   
+      </div>
+  </div>
+
   )
 }
 
