@@ -107,7 +107,7 @@ function Booking() {
         </header>
 
         <form className="card" onSubmit={handleSubmit}>
-          <section>
+          <section className="form-section">
             <h3>Schedule</h3>
             <div className="grid-3">
               <div>
@@ -140,7 +140,7 @@ function Booking() {
             </div>
           </section>
 
-          <section>
+          <section className="form-section">
             <h3>Trip Details</h3>
             <div className="grid-2">
               <div>

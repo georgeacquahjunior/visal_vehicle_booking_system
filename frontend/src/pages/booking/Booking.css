@@ -44,7 +44,7 @@
   margin-top: 22px;
 }
 
-section {
+.form-section {
   margin-bottom: 26px;
   background: #ffffff;
   padding: 18px;
@@ -53,7 +53,7 @@ section {
   box-shadow: 0 10px 22px rgba(15, 23, 42, 0.06);
 }
 
-section h3 {
+.form-section h3 {
   color: #0b2a4a;
   margin-bottom: 10px;
   font-size: 18px;
