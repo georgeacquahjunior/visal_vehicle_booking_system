@@ -1,5 +1,14 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import './Approvals.css';
+import {
+  fetchPendingBookings,
+  approveBookingAPI,
+  declineBookingAPI,
+  formatDate,
+  getStatusClass,
+  isPastBooking
+} from '../../../utils/approvals';
+
 
 function Approvals() {
   const [statusFilter, setStatusFilter] = useState('pending');
@@ -10,115 +19,138 @@ function Approvals() {
   const [declineReason, setDeclineReason] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
 
-  // Mock bookings data - pending approvals
-  const mockBookings = [
-    {
-      id: 1,
-      vehicleName: 'Ford Transit - Van 02',
-      startTime: '09:00',
-      endTime: '10:30',
-      date: new Date(2025, 0, 22),
-      purpose: 'Client Site Visit',
-      location: 'Downtown Distribution Center',
-      status: 'pending',
-      userName: 'John Smith',
-      userEmail: 'john@company.com',
-      userDept: 'Sales',
-      notes: 'Client meeting for project discussion',
-      submittedDate: new Date(2025, 0, 18)
-    },
-    {
-      id: 2,
-      vehicleName: 'Toyota Camry',
-      startTime: '14:00',
-      endTime: '15:30',
-      date: new Date(2025, 0, 23),
-      purpose: 'Executive Transport',
-      location: 'Airport Terminal',
-      status: 'pending',
-      userName: 'Sarah Johnson',
-      userEmail: 'sarah@company.com',
-      userDept: 'Operations',
-      notes: 'Airport pickup for visiting executive',
-      submittedDate: new Date(2025, 0, 19)
-    },
-    {
-      id: 3,
-      vehicleName: 'Nissan NV200',
-      startTime: '10:00',
-      endTime: '13:00',
-      date: new Date(2025, 0, 25),
-      purpose: 'Quarterly Supply Run',
-      location: 'Warehouse',
-      status: 'pending',
-      userName: 'Mike Chen',
-      userEmail: 'mike@company.com',
-      userDept: 'Logistics',
-      notes: 'Monthly supply delivery',
-      submittedDate: new Date(2025, 0, 17)
-    },
-    {
-      id: 4,
-      vehicleName: 'Hyundai i30',
-      startTime: '11:00',
-      endTime: '12:30',
-      date: new Date(2025, 0, 24),
-      purpose: 'Client Meeting',
-      location: 'Business Park',
-      status: 'approved',
-      userName: 'Emma Davis',
-      userEmail: 'emma@company.com',
-      userDept: 'Marketing',
-      notes: 'Quarterly review meeting',
-      submittedDate: new Date(2025, 0, 15),
-      approvedDate: new Date(2025, 0, 16),
-      approvedBy: 'Admin User'
-    },
-    {
-      id: 5,
-      vehicleName: 'Maintenance Truck 01',
-      startTime: '08:00',
-      endTime: '12:00',
-      date: new Date(2025, 0, 20),
-      purpose: 'Equipment Haul',
-      location: 'North Sector',
-      status: 'declined',
-      userName: 'Robert Wilson',
-      userEmail: 'robert@company.com',
-      userDept: 'Operations',
-      notes: 'Equipment delivery to north location',
-      submittedDate: new Date(2025, 0, 14),
-      declinedDate: new Date(2025, 0, 15),
-      declineReason: 'Vehicle not available on requested date',
-      declinedBy: 'Admin User'
+  // bookings fetched from backend pending endpoint
+  const [bookings, setBookings] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+  const [actionMessage, setActionMessage] = useState(null);
+
+  const [processingId, setProcessingId] = useState(null);
+
+  useEffect(() => {
+    if (!actionMessage) return undefined;
+    const timer = setTimeout(() => setActionMessage(null), 7000);
+    return () => clearTimeout(timer);
+  }, [actionMessage]);
+
+  useEffect(() => {
+  const loadBookings = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const data = await fetchPendingBookings();
+
+      const today = new Date();
+
+      const isOnOrBefore = (d1, d2) => {
+        if (!d1) return false;
+        const a = new Date(d1.getFullYear(), d1.getMonth(), d1.getDate());
+        const b = new Date(d2.getFullYear(), d2.getMonth(), d2.getDate());
+        return a.getTime() <= b.getTime();
+      };
+
+      const filtered = data
+        .filter((m) => isOnOrBefore(m.date, today))
+        .sort((a, b) => {
+          const ad = a.date ? a.date.getTime() : 0;
+          const bd = b.date ? b.date.getTime() : 0;
+          if (bd !== ad) return bd - ad;
+          return (b.startTime || '').localeCompare(a.startTime || '');
+        });
+
+      setBookings(filtered);
+    } catch (err) {
+      setError(err.message || 'Failed to load pending bookings');
+    } finally {
+      setLoading(false);
     }
-  ];
+  };
+
+  loadBookings();
+  }, []);
+
+
+  // API calls: approve / decline. Backend routes may not exist yet; these calls are best-effort
+  const approveBooking = async (bookingId) => {
+  setProcessingId(bookingId);
+  try {
+    await approveBookingAPI(bookingId);
+
+    setBookings((prev) =>
+      prev.map((b) =>
+        b.id === bookingId
+          ? { ...b, status: 'approved', approvedBy: 'Admin' }
+          : b
+      )
+    );
+    setError(null);
+    setActionMessage({
+      type: 'success',
+      text: 'Booking approved successfully.'
+    });
+
+    return true;
+  } catch (err) {
+    const msg = err.message || 'Failed to approve booking.';
+    setError(msg);
+    setActionMessage({
+      type: 'error',
+      text: msg
+    });
+    return false;
+  } finally {
+    setProcessingId(null);
+  }
+  };
+
+
+
+  const declineBooking = async (bookingId, reason) => {
+  setProcessingId(bookingId);
+  try {
+    await declineBookingAPI(bookingId, reason);
+
+    setBookings((prev) =>
+      prev.map((b) =>
+        b.id === bookingId
+          ? { ...b, status: 'declined', declineReason: reason }
+          : b
+      )
+    );
+    setError(null);
+    setActionMessage({
+      type: 'success',
+      text: 'Booking declined successfully.'
+    });
+
+    return true;
+  } catch (err) {
+    const msg = err.message || 'Failed to decline booking.';
+    setError(msg);
+    setActionMessage({
+      type: 'error',
+      text: msg
+    });
+    return false;
+  } finally {
+    setProcessingId(null);
+  }
+  };
+
+
 
   // Filter bookings based on status and search
-  const filteredBookings = mockBookings.filter(booking => {
+  const filteredBookings = bookings.filter(booking => {
     const statusMatch = statusFilter === 'all' || booking.status === statusFilter;
     const searchMatch = 
-      booking.userName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      booking.purpose.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      booking.vehicleName.toLowerCase().includes(searchTerm.toLowerCase());
+      (booking.userName || '').toString().toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (booking.purpose || '').toString().toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (booking.vehicleName || '').toString().toLowerCase().includes(searchTerm.toLowerCase());
     return statusMatch && searchMatch;
   });
 
-  // Format date
-  const formatDate = (date) => {
-    const options = { year: 'numeric', month: 'short', day: 'numeric' };
-    return date.toLocaleDateString('en-US', options);
-  };
 
-  // Get status badge color
-  const getStatusClass = (status) => {
-    switch(status) {
-      case 'approved': return 'approved';
-      case 'pending': return 'pending';
-      case 'declined': return 'declined';
-      default: return 'pending';
-    }
-  };
+  // helper: check if a booking date is in the past (strictly before today)
 
   const handleApprove = (booking) => {
     setSelectedBooking(booking);
@@ -136,28 +168,34 @@ function Approvals() {
   };
 
   const confirmApprove = () => {
-    if (selectedBooking) {
-      alert(`Booking ${selectedBooking.id} approved successfully!`);
-      setApproveDialogOpen(false);
-      setSelectedBooking(null);
-    }
+    if (!selectedBooking) return;
+    (async () => {
+      const ok = await approveBooking(selectedBooking.id);
+      if (ok) {
+        setApproveDialogOpen(false);
+        setSelectedBooking(null);
+      }
+    })();
   };
 
   const confirmDecline = () => {
-    if (selectedBooking && declineReason.trim()) {
-      alert(`Booking ${selectedBooking.id} declined with reason: ${declineReason}`);
-      setDeclineDialogOpen(false);
-      setDeclineReason('');
-      setSelectedBooking(null);
-    }
+    if (!selectedBooking || !declineReason.trim()) return;
+    (async () => {
+      const ok = await declineBooking(selectedBooking.id, declineReason.trim());
+      if (ok) {
+        setDeclineDialogOpen(false);
+        setDeclineReason('');
+        setSelectedBooking(null);
+      }
+    })();
   };
 
   // Count bookings by status
   const statusCounts = {
-    all: mockBookings.length,
-    pending: mockBookings.filter(b => b.status === 'pending').length,
-    approved: mockBookings.filter(b => b.status === 'approved').length,
-    declined: mockBookings.filter(b => b.status === 'declined').length
+    all: bookings.length,
+    pending: bookings.filter(b => b.status === 'pending').length,
+    approved: bookings.filter(b => b.status === 'approved').length,
+    declined: bookings.filter(b => b.status === 'declined').length
   };
 
   return (
@@ -170,9 +208,37 @@ function Approvals() {
         </div>
       </div>
 
+      {actionMessage && (
+        <div className={`action-alert ${actionMessage.type}`}>
+          <span className="action-alert-text">{actionMessage.text}</span>
+          <button
+            type="button"
+            className="action-alert-close"
+            onClick={() => setActionMessage(null)}
+            aria-label="Dismiss notification"
+          >
+            x
+          </button>
+        </div>
+      )}
+
+      {!actionMessage && error && (
+        <div className="action-alert error">
+          <span className="action-alert-text">{error}</span>
+          <button
+            type="button"
+            className="action-alert-close"
+            onClick={() => setError(null)}
+            aria-label="Dismiss error"
+          >
+            x
+          </button>
+        </div>
+      )}
+
       {/* Stats Cards */}
       <div className="approval-stats">
-        <div className="stat-card">
+        <div className="stat-card pending">
           <div className="stat-number">{statusCounts.pending}</div>
           <div className="stat-label">Pending</div>
         </div>
@@ -200,7 +266,6 @@ function Approvals() {
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
-          <span className="material-symbols-outlined search-icon">search</span>
         </div>
 
         <div className="status-filter">
@@ -241,7 +306,6 @@ function Approvals() {
                   <div className="approval-header">
                     <div className="approval-title">
                       <h3>{booking.purpose}</h3>
-                      <p>{booking.vehicleName}</p>
                     </div>
                     <span className={`status-badge ${getStatusClass(booking.status)}`}>
                       {booking.status.toUpperCase()}
@@ -250,7 +314,6 @@ function Approvals() {
 
                   <div className="approval-details">
                     <div className="detail-item">
-                      <span className="material-symbols-outlined">person</span>
                       <div>
                         <div className="detail-label">Requester</div>
                         <div className="detail-value">{booking.userName}</div>
@@ -259,7 +322,6 @@ function Approvals() {
                     </div>
 
                     <div className="detail-item">
-                      <span className="material-symbols-outlined">calendar_today</span>
                       <div>
                         <div className="detail-label">Booking Date</div>
                         <div className="detail-value">{formatDate(booking.date)}</div>
@@ -268,7 +330,6 @@ function Approvals() {
                     </div>
 
                     <div className="detail-item">
-                      <span className="material-symbols-outlined">location_on</span>
                       <div>
                         <div className="detail-label">Location</div>
                         <div className="detail-value">{booking.location}</div>
@@ -276,7 +337,6 @@ function Approvals() {
                     </div>
 
                     <div className="detail-item">
-                      <span className="material-symbols-outlined">access_time</span>
                       <div>
                         <div className="detail-label">Submitted</div>
                         <div className="detail-value">{formatDate(booking.submittedDate)}</div>
@@ -286,7 +346,6 @@ function Approvals() {
 
                   {booking.notes && (
                     <div className="approval-notes">
-                      <span className="material-symbols-outlined">note</span>
                       <div>
                         <div className="notes-label">Notes</div>
                         <div className="notes-value">{booking.notes}</div>
@@ -300,8 +359,9 @@ function Approvals() {
                     className="btn-view"
                     onClick={() => handleView(booking)}
                     title="View details"
+                    disabled={processingId === booking.id}
                   >
-                    <span className="material-symbols-outlined">visibility</span>
+                    <span className="btn-label">View</span>
                   </button>
 
                   {booking.status === 'pending' && (
@@ -310,15 +370,17 @@ function Approvals() {
                         className="btn-approve"
                         onClick={() => handleApprove(booking)}
                         title="Approve"
+                        disabled={processingId === booking.id || isPastBooking(booking.date)}
                       >
-                        <span className="material-symbols-outlined">check_circle</span>
+                        <span className="btn-label">Approve</span>
                       </button>
                       <button
                         className="btn-reject"
                         onClick={() => handleDecline(booking)}
                         title="Decline"
+                        disabled={processingId === booking.id || isPastBooking(booking.date)}
                       >
-                        <span className="material-symbols-outlined">cancel</span>
+                        <span className="btn-label">Decline</span>
                       </button>
                     </>
                   )}
@@ -326,7 +388,7 @@ function Approvals() {
                   {booking.status === 'approved' && (
                     <div className="approval-info">
                       <span className="material-symbols-outlined">done</span>
-                      <span>Approved by {booking.approvedBy}</span>
+                      <span>Approved by {booking.approvedBy || 'Admin'}</span>
                     </div>
                   )}
 
@@ -356,7 +418,6 @@ function Approvals() {
             <div className="dialog-header">
               <h3>Booking Details</h3>
               <button className="dialog-close" onClick={() => setViewDialogOpen(false)}>
-                <span className="material-symbols-outlined">close</span>
               </button>
             </div>
             
@@ -428,7 +489,6 @@ function Approvals() {
                       handleApprove(selectedBooking);
                     }}
                   >
-                    <span className="material-symbols-outlined">check_circle</span>
                     Approve
                   </button>
                   <button
@@ -438,7 +498,6 @@ function Approvals() {
                       handleDecline(selectedBooking);
                     }}
                   >
-                    <span className="material-symbols-outlined">cancel</span>
                     Decline
                   </button>
                 </>
@@ -458,7 +517,6 @@ function Approvals() {
             
             <div className="dialog-content">
               <div className="confirm-box success">
-                <span className="material-symbols-outlined">check_circle</span>
                 <div>
                   <strong>Confirm Approval</strong>
                   <p>You are about to approve <strong>{selectedBooking.purpose}</strong> for <strong>{selectedBooking.userName}</strong></p>
@@ -472,7 +530,6 @@ function Approvals() {
                 Cancel
               </button>
               <button className="btn-approve-full" onClick={confirmApprove}>
-                <span className="material-symbols-outlined">check_circle</span>
                 Confirm Approval
               </button>
             </div>
@@ -490,7 +547,6 @@ function Approvals() {
             
             <div className="dialog-content">
               <div className="confirm-box danger">
-                <span className="material-symbols-outlined">cancel</span>
                 <div>
                   <strong>Confirm Decline</strong>
                   <p>You are about to decline <strong>{selectedBooking.purpose}</strong> for <strong>{selectedBooking.userName}</strong></p>
@@ -521,7 +577,6 @@ function Approvals() {
                 onClick={confirmDecline}
                 disabled={!declineReason.trim()}
               >
-                <span className="material-symbols-outlined">cancel</span>
                 Decline Booking
               </button>
             </div>
