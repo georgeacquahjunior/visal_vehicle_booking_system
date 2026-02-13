@@ -4,8 +4,7 @@
 ![Flask](https://img.shields.io/badge/Backend-Flask-000000?logo=flask)
 ![PostgreSQL](https://img.shields.io/badge/Database-PostgreSQL-336791?logo=postgresql)
 ![JWT](https://img.shields.io/badge/Auth-JWT-orange)
-![Status](https://img.shields.io/badge/Status-Active-success)
-![License](https://img.shields.io/badge/License-All%20Rights%20Reserved-red)
+
 
 A full-stack vehicle booking management system that allows staff to request vehicles and admins to approve or decline bookings through a secure, role-based workflow.
 
@@ -50,7 +49,7 @@ This system improves transparency, operational efficiency, and accountability in
 - Protected backend routes
 - Environment variable configuration
 - Secure password handling
-
+---
 # 🧱 Tech Stack
 
 ## Frontend
@@ -167,7 +166,6 @@ SECRET_KEY=change-me
 JWT_SECRET_KEY=change-me-too
 JWT_ACCESS_TOKEN_EXPIRES_HOURS=8
 DATABASE_URL=postgresql://postgres:your_password@localhost:5432/vehicle_booking_db
-ADMIN_EMAIL=admin@example.com
 ```
 
 ---
