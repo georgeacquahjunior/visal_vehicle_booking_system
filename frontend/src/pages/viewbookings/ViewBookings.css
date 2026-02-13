@@ -1,12 +1,18 @@
 
 .view-bookings {
   padding: 24px;
-  background-color: #f7f7f7;
+  background: linear-gradient(180deg, #f5f7fb 0%, #eef2f7 100%);
   min-height: 100vh;
   font-family: "Inter", sans-serif;
   color: #131117;
 }
 
+.vb-header{
+  background: #fff;
+  padding: 20px 40px;
+  border-radius: 20px;
+  box-shadow: 0 10px 22px rgba(15, 23, 42, 0.06);
+}
 
 .vb-header h1 {
   font-size: 28px;
@@ -19,6 +25,7 @@
   color: #6b6284;
   margin: 0;
   font-weight: 500;
+  text-align: center;
 }
 
 .vb-stats {
@@ -95,9 +102,9 @@
 }
 
 .bookings-filter-btn.active, .bookings-filter-btn:hover {
-  background: #000fff;
+  background: #1896df;
   color: #fff;
-  border-color: #000fff;
+  border-color: #1896df;
 }
 
 .bookings-grid {
@@ -128,19 +135,19 @@
 .booking-item.completed { border-left-color: #06b6d4; }
 .booking-item.declined { border-left-color: #f30c0c; opacity: 0.7; }
 
-.booking-header {
+.vb-booking-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
 }
 
-.booking-header h3 {
+.vb-booking-header h3 {
   font-size: 20px;
   font-weight: 600;
   margin: 0;
 }
 
-.booking-header p {
+.vb-booking-header p {
   font-size: 14px;
   color: #6b6284;
   margin: 0;
@@ -168,7 +175,7 @@
   align-items: center;
   gap: 12px;
   padding-bottom: 10px;
-  background: #f0efef;
+  background: linear-gradient(180deg, #f5f7fb 0%, #eef2f7 100%);
   padding: 5px 20px;
   border-radius: 7px;
 }
