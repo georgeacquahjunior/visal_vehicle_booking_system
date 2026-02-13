@@ -1,7 +1,8 @@
 # app/__init__.py
 from flask import Flask
-from .extensions import db, migrate
+from .extensions import db, migrate, mail
 from flask_cors import CORS
+from flask_jwt_extended import JWTManager
 
 def create_app(config_class=None):
     app = Flask(__name__)
@@ -18,6 +19,7 @@ def create_app(config_class=None):
     # Initialize extensions
     db.init_app(app)
     migrate.init_app(app, db)
+    mail.init_app(app)
 
     # Import models from models folder
     from .models.users import User
@@ -28,5 +30,8 @@ def create_app(config_class=None):
     from .routes.bookings import bookings_bp
     app.register_blueprint(auth_bp)
     app.register_blueprint(bookings_bp)
+
+    # JWT token initialization
+    jwt = JWTManager(app)
 
     return app
