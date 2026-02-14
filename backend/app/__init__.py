@@ -1,6 +1,6 @@
 # app/__init__.py
 from flask import Flask
-from .extensions import db, migrate, mail
+from .extensions import db, migrate
 from flask_cors import CORS
 from flask_jwt_extended import JWTManager
 
@@ -19,7 +19,6 @@ def create_app(config_class=None):
     # Initialize extensions
     db.init_app(app)
     migrate.init_app(app, db)
-    mail.init_app(app)
 
     # Import models from models folder
     from .models.users import User

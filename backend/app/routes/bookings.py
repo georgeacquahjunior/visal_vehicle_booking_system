@@ -3,8 +3,6 @@ from datetime import datetime
 from .. import db
 from ..models.bookings import Booking
 from ..models.users import User
-from ..extensions import mail
-from flask_mail import Message
 
 bookings_bp = Blueprint("bookings", __name__, url_prefix="/bookings")
 
@@ -64,39 +62,6 @@ def create_booking():
 
     db.session.add(booking)
     db.session.commit()
-
-    # Send email notification (non-blocking for booking success)
-    try:
-        admin_email = current_app.config.get("ADMIN_EMAIL")
-        recipients = [user.email]
-        if admin_email:
-            recipients.append(admin_email)
-
-        msg = Message(
-            subject="Booking request submitted",
-            recipients=recipients,
-        )
-        msg.body = (
-            f"Hi {user.full_name},\n\n"
-            f"Your booking request was submitted successfully and is pending approval.\n\n"
-            f"Date: {booking.booking_date.isoformat()}\n"
-            f"Start: {booking.start_time.strftime('%H:%M')}\n"
-            f"End: {booking.end_time.strftime('%H:%M')}\n"
-            f"Destination: {booking.location}\n"
-            f"Purpose: {booking.purpose}\n"
-            f"Notes: {booking.notes or 'N/A'}\n\n"
-            "Thanks,\n"
-            "Visal Vehicle System"
-        )
-        mail.send(msg)
-    except Exception as exc:
-        current_app.logger.warning("Booking email failed: %s", exc)
-
-    return jsonify({
-        "message": "Booking created successfully",
-        "booking_id": booking.id,
-        "status": booking.status
-    }), 201
 
 
 # GET USER BOOKINGS BY ID
