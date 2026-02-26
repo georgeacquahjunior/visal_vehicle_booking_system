@@ -1,5 +1,5 @@
 from flask import Blueprint, request, jsonify
-from flask_jwt_extended import create_access_token
+from flask_jwt_extended import create_access_token, jwt_required, get_jwt_identity, get_jwt
 from .. import db
 from ..models.users import User
 
@@ -8,7 +8,11 @@ auth_bp = Blueprint("auth", __name__, url_prefix="/auth")
 
 # Staff Registration (Admin only)
 @auth_bp.route("/register", methods=["POST"])
+@jwt_required()
 def register():
+    claims = get_jwt()
+    if claims.get("role") != "admin":
+        return jsonify({"error": "Only admins can register staff"}), 403
     data = request.get_json()
 
     staff_id = data.get("staff_id")  
@@ -88,7 +92,11 @@ def login():
 
 # Get all staffs
 @auth_bp.route("/users", methods=["GET"])
+@jwt_required()
 def get_all_users():
+    claims = get_jwt()
+    if claims.get("role") != "admin":
+        return jsonify({"error": "Only admins can view all users"}), 403
     users = User.query.order_by(User.staff_id.asc()).all()
 
     users_data = []

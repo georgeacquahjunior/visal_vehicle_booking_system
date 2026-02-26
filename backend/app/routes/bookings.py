@@ -1,5 +1,6 @@
 from flask import Blueprint, request, jsonify, current_app
 from datetime import datetime
+from flask_jwt_extended import jwt_required, get_jwt_identity, get_jwt
 from .. import db
 from ..models.bookings import Booking
 from ..models.users import User
@@ -8,7 +9,9 @@ bookings_bp = Blueprint("bookings", __name__, url_prefix="/bookings")
 
 #  CREATE BOOKINGS
 @bookings_bp.route("/create_booking", methods=["POST"])
+@jwt_required()
 def create_booking():
+    user_identity = get_jwt_identity()
     data = request.get_json()
 
     if not data:
@@ -21,6 +24,11 @@ def create_booking():
     location = data.get("location")
     purpose = data.get("purpose")
     notes = data.get("notes")
+
+    # Authenticate: users can only book for themselves, admins can book for others
+    claims = get_jwt()
+    if claims.get("role") != "admin" and int(user_id) != user_identity:
+        return jsonify({"error": "You can only create bookings for yourself"}), 403
 
     # Validate required fields
     if not all([user_id, booking_date, start_time, end_time, location, purpose]):
@@ -191,7 +199,11 @@ def get_pending_bookings():
 
 # Approve bookings
 @bookings_bp.route("/<int:booking_id>/approve", methods=["PATCH"])
+@jwt_required()
 def approve_booking(booking_id):
+    claims = get_jwt()
+    if claims.get("role") != "admin":
+        return jsonify({"error": "Only admins can approve bookings"}), 403
     """
     Admin approves a booking
     """
@@ -224,7 +236,11 @@ def approve_booking(booking_id):
 
 # Decline Bookings
 @bookings_bp.route("/<int:booking_id>/decline", methods=["PATCH"])
+@jwt_required()
 def decline_booking(booking_id):
+    claims = get_jwt()
+    if claims.get("role") != "admin":
+        return jsonify({"error": "Only admins can decline bookings"}), 403
     """
     Admin declines a booking
     """
