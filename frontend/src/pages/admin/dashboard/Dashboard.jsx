@@ -97,10 +97,10 @@ function Dashboard() {
   const approveBooking = async (id) => {
     setProcessingId(id);
     try {
-      const res = await fetch(`${API_BASE}/bookings/approve`, {
-        method: 'POST',
+      const res = await fetch(`${API_BASE}/bookings/${id}/approve`, {
+        method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ booking_id: id })
+        body: JSON.stringify({ admin_comment: '' })
       });
       if (!res.ok) throw new Error(`Server responded ${res.status}`);
       setPending((p) => p.map(x => x.id === id ? { ...x, status: 'approved' } : x));
@@ -113,10 +113,10 @@ function Dashboard() {
   const declineBooking = async (id) => {
     setProcessingId(id);
     try {
-      const res = await fetch(`${API_BASE}/bookings/decline`, {
-        method: 'POST',
+      const res = await fetch(`${API_BASE}/bookings/${id}/decline`, {
+        method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ booking_id: id, reason: 'Declined from dashboard' })
+        body: JSON.stringify({ admin_comment: 'Declined from dashboard' })
       });
       if (!res.ok) throw new Error(`Server responded ${res.status}`);
       setPending((p) => p.map(x => x.id === id ? { ...x, status: 'declined' } : x));
