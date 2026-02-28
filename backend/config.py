@@ -5,7 +5,7 @@ class Config:
     SECRET_KEY = os.getenv("SECRET_KEY")
     JWT_SECRET_KEY = os.getenv("JWT_SECRET_KEY")
     JWT_ACCESS_TOKEN_EXPIRES = timedelta(
-        hours=float(os.getenv("JWT_ACCESS_TOKEN_EXPIRES_HOURS", "0.5"))
+        hours=float(os.getenv("JWT_ACCESS_TOKEN_EXPIRES_HOURS", "0.1"))
     )
 
     SQLALCHEMY_DATABASE_URI = os.getenv("DATABASE_URL")
