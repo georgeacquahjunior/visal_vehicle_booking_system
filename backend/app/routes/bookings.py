@@ -1,5 +1,6 @@
 from flask import Blueprint, request, jsonify, current_app
 from datetime import datetime
+from flask_jwt_extended import jwt_required, get_jwt_identity, get_jwt
 from .. import db
 from ..models.bookings import Booking
 from ..models.users import User
@@ -8,7 +9,9 @@ bookings_bp = Blueprint("bookings", __name__, url_prefix="/bookings")
 
 #  CREATE BOOKINGS
 @bookings_bp.route("/create_booking", methods=["POST"])
+@jwt_required()
 def create_booking():
+    user_identity = get_jwt_identity()
     data = request.get_json()
 
     if not data:
@@ -22,11 +25,22 @@ def create_booking():
     purpose = data.get("purpose")
     notes = data.get("notes")
 
-    # Validate required fields
+    # Validate required fields first
     if not all([user_id, booking_date, start_time, end_time, location, purpose]):
         return jsonify({
             "error": "user_id, booking_date, start_time, end_time, location, and purpose are required"
         }), 400
+
+    # Ensure user_id is a valid integer
+    try:
+        user_id = int(user_id)
+    except (TypeError, ValueError):
+        return jsonify({"error": "user_id must be an integer"}), 400
+
+    # Authenticate: users can only book for themselves, admins can book for others
+    claims = get_jwt()
+    if claims.get("role") != "admin" and user_id != user_identity:
+        return jsonify({"error": "You can only create bookings for yourself"}), 403
 
     # Check if user exists
     user = User.query.get(user_id)
@@ -62,6 +76,23 @@ def create_booking():
 
     db.session.add(booking)
     db.session.commit()
+
+    return jsonify({
+        "message": "Booking created successfully",
+        "booking": {
+            "booking_id": booking.id,
+            "staff_id": booking.user_id,
+            "booking_date": booking.booking_date.isoformat(),
+            "start_time": booking.start_time.strftime("%H:%M"),
+            "end_time": booking.end_time.strftime("%H:%M"),
+            "location": booking.location,
+            "purpose": booking.purpose,
+            "notes": booking.notes,
+            "status": booking.status,
+            "admin_comment": booking.admin_comment,
+            "created_at": booking.created_at.isoformat()
+        }
+    }), 201
 
 
 # GET USER BOOKINGS BY ID
@@ -191,7 +222,11 @@ def get_pending_bookings():
 
 # Approve bookings
 @bookings_bp.route("/<int:booking_id>/approve", methods=["PATCH"])
+@jwt_required()
 def approve_booking(booking_id):
+    claims = get_jwt()
+    if claims.get("role") != "admin":
+        return jsonify({"error": "Only admins can approve bookings"}), 403
     """
     Admin approves a booking
     """
@@ -224,7 +259,11 @@ def approve_booking(booking_id):
 
 # Decline Bookings
 @bookings_bp.route("/<int:booking_id>/decline", methods=["PATCH"])
+@jwt_required()
 def decline_booking(booking_id):
+    claims = get_jwt()
+    if claims.get("role") != "admin":
+        return jsonify({"error": "Only admins can decline bookings"}), 403
     """
     Admin declines a booking
     """
