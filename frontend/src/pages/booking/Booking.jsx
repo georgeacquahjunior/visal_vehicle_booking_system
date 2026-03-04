@@ -7,27 +7,17 @@ import BookingModal from "../../components/bookingModal/BookingModal";
 function Booking() {
   const today = new Date().toISOString().split("T")[0];
 
-  const [bookingDate] = useState(today);
+  const [bookingDate, setBookingDate] = useState(today);
   const [startTime, setStartTime] = useState("");
   const [endTime, setEndTime] = useState("");
   const [location, setLocation] = useState("");
-  const [purpose, setPurpose] = useState("Client Meeting");
+  const [purpose, setPurpose] = useState(
+    "Client Business Development Meeting"
+  );
   const [notes, setNotes] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
-
-  // Function to format full date
-  const formatFullDate = (dateString) => {
-    if (!dateString) return "";
-    const date = new Date(dateString);
-    return date.toLocaleDateString("en-US", {
-      weekday: "long",
-      year: "numeric",
-      month: "long",
-      day: "numeric",
-    });
-  };
 
   // Validation
   const validateBooking = () => {
@@ -57,7 +47,7 @@ function Booking() {
     setError("");
     setSuccess("");
 
-    const user_id = Number(localStorage.getItem("staff_id"));
+    const token = localStorage.getItem("access_token");
 
     try {
       const response = await fetch(
@@ -66,9 +56,9 @@ function Booking() {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
+            "Authorization": `Bearer ${token}`,
           },
           body: JSON.stringify({
-            user_id,
             booking_date: bookingDate,
             start_time: startTime,
             end_time: endTime,
@@ -88,7 +78,7 @@ function Booking() {
         setStartTime("");
         setEndTime("");
         setLocation("");
-        setPurpose("Client Meeting");
+        setPurpose("Client Business Development Meeting");
         setNotes("");
       }
     } catch (err) {
@@ -112,8 +102,14 @@ function Booking() {
             <div className="grid-3">
               <div>
                 <label>Booking Date</label>
-                <input type="text" value={formatFullDate(bookingDate)} readOnly />
-                <p><i className="fa-solid fa-circle-info"></i> automatically selected date</p>
+                <input
+                  type="date"
+                  value={bookingDate}
+                  onChange={(e) => setBookingDate(e.target.value)}
+                  min={today}
+                  required
+                />
+                <p><i className="fa-solid fa-circle-info"></i> select your booking date</p>
               </div>
 
               <div>
@@ -124,7 +120,7 @@ function Booking() {
                   onChange={(e) => setStartTime(e.target.value)}
                   required
                 />
-                <p><i className="fa-solid fa-circle-info"></i> start time is 09:00 AM by default</p>
+                <p><i className="fa-solid fa-circle-info"></i> booking starts at 09:00 AM</p>
               </div>
 
               <div>
@@ -135,7 +131,7 @@ function Booking() {
                   onChange={(e) => setEndTime(e.target.value)}
                   required
                 />
-                <p><i className="fa-solid fa-circle-info"></i> end time is 4:00 PM by default</p>
+                <p><i className="fa-solid fa-circle-info"></i>booking ends at 4:00 PM</p>
               </div>
             </div>
           </section>
@@ -160,9 +156,28 @@ function Booking() {
                   value={purpose}
                   onChange={(e) => setPurpose(e.target.value)}
                 >
-                  <option>Client Meeting</option>
-                  <option>Site Visit</option>
-                  <option>Official Duty</option>
+                  <option value="" disabled>Select a booking reason</option>
+                  <option>Client Business Development Meeting</option>
+                  <option>Client Relations Visit</option>
+                  <option>Insurance Company Visit - Commission Follow-Up</option>
+                  <option>
+                    Insurance Company Visit - Outstanding Claim Follow-Up
+                  </option>
+                  <option>Reinsurance Marketing Round</option>
+                  <option>
+                    Bank Visit - Company Cheque Deposit/Withdrawal
+                  </option>
+                  <option>Reinsurance Gifts Delivery to Clients</option>
+                  <option>
+                    Official Document Collection/Delivery (Visal/Visal Re)
+                  </option>
+                  <option>
+                    Corporate Event Meeting/ Representation
+                  </option>
+                  <option>
+                    Purchase of Ordered Items/Equipment Pickup
+                  </option>
+                  <option>Staff airport Drop Off/Pick up</option>
                 </select>
               </div>
             </div>

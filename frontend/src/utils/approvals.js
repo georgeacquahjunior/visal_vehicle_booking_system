@@ -43,11 +43,16 @@ export const fetchPendingBookings = async () => {
    APPROVE BOOKING
 ================================ */
 export const approveBookingAPI = async (bookingId) => {
+  const token = localStorage.getItem("access_token");
+
   const res = await fetch(
     `${API_BASE}/bookings/${bookingId}/approve`,
     {
       method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`
+      },
       body: JSON.stringify({
         admin_comment: 'Approved by admin'
       })
@@ -67,11 +72,16 @@ export const approveBookingAPI = async (bookingId) => {
    DECLINE BOOKING
 ================================ */
 export const declineBookingAPI = async (bookingId, reason) => {
+  const token = localStorage.getItem("access_token");
+
   const res = await fetch(
     `${API_BASE}/bookings/${bookingId}/decline`,
     {
       method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`
+      },
       body: JSON.stringify({
         admin_comment: reason
       })

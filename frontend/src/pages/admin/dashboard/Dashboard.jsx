@@ -56,21 +56,26 @@ function Dashboard() {
       setStaffLoading(true);
       setStaffError(null);
 
+      const token = localStorage.getItem("access_token"); // add this
+
       try {
-        const res = await fetch(`${API_BASE}/auth/users`);
+        const res = await fetch(`${API_BASE}/auth/users`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+
         if (!res.ok) throw new Error(`Server responded ${res.status}`);
 
         const data = await res.json();
-
-        // Adjust this depending on your backend response shape
         const users = Array.isArray(data.users) ? data.users : data;
 
         const mapped = users.map((u) => ({
-          id: u.id || u.user_id,
-          name: u.full_name || `${u.first_name || ''} ${u.last_name || ''}`.trim(),
+          id: u.staff_id,
+          name: u.full_name,
           email: u.email,
           role: u.role || 'staff',
-          status: u.status || 'active',
+          status: 'active', // or u.status if you add it in backend
         }));
 
         setStaff(mapped);
@@ -95,37 +100,63 @@ function Dashboard() {
   };
 
   const approveBooking = async (id) => {
+    const token = localStorage.getItem("access_token");
+
     setProcessingId(id);
+
     try {
       const res = await fetch(`${API_BASE}/bookings/${id}/approve`, {
         method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`
+        },
         body: JSON.stringify({ admin_comment: '' })
       });
+
       if (!res.ok) throw new Error(`Server responded ${res.status}`);
-      setPending((p) => p.map(x => x.id === id ? { ...x, status: 'approved' } : x));
+
+      setPending((p) =>
+        p.map(x => x.id === id ? { ...x, status: 'approved' } : x)
+      );
     } catch (err) {
       console.error(err);
       setError(err.message || 'Failed to approve');
-    } finally { setProcessingId(null); }
+    } finally {
+      setProcessingId(null);
+    }
   };
 
   const declineBooking = async (id) => {
+    const token = localStorage.getItem("access_token");
+
     setProcessingId(id);
+
     try {
       const res = await fetch(`${API_BASE}/bookings/${id}/decline`, {
         method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ admin_comment: 'Declined from dashboard' })
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          admin_comment: 'Declined from dashboard'
+        })
       });
+
       if (!res.ok) throw new Error(`Server responded ${res.status}`);
-      setPending((p) => p.map(x => x.id === id ? { ...x, status: 'declined' } : x));
+
+      setPending((p) =>
+        p.map(x => x.id === id ? { ...x, status: 'declined' } : x)
+      );
     } catch (err) {
       console.error(err);
       setError(err.message || 'Failed to decline');
-    } finally { setProcessingId(null); }
+    } finally {
+      setProcessingId(null);
+    }
   };
-
+  
   return (
     <div className="admin-dashboard">
       {/* Page Title */}
@@ -133,25 +164,25 @@ function Dashboard() {
 
       {/* Summary Cards */}
       <div className="stats-grid">
-        <div className="stat-card">
+        <div className="stat-card total-staff">
           <h3>Total Staff</h3>
           <p>{staff.length}</p>
         </div>
 
-        <div className="stat-card">
+        {/* <div className="stat-card">
           <h3>Total Bookings</h3>
           <p>120</p>
-        </div>
+        </div> */}
 
-        <div className="stat-card">
+        <div className="stat-card total-pending">
           <h3>Pending Requests</h3>
           <p>{pending.length}</p>
         </div>
 
-        <div className="stat-card">
+        {/* <div className="stat-card">
           <h3>Approved Today</h3>
           <p>8</p>
-        </div>
+        </div> */}
       </div>
 
 
@@ -208,6 +239,7 @@ function Dashboard() {
           <table>
             <thead>
               <tr>
+                <th>Staff ID</th>
                 <th>Name</th>
                 <th>Email</th>
                 <th>Role</th>
@@ -225,6 +257,7 @@ function Dashboard() {
               ) : (
                 staff.map((s) => (
                   <tr key={s.id}>
+                    <td>{s.staff_id}</td>
                     <td>{s.name}</td>
                     <td>{s.email}</td>
                     <td>{s.role}</td>

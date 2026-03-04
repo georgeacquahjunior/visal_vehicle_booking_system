@@ -23,12 +23,16 @@ def create_app(config_class=None):
     # Import models from models folder
     from .models.users import User
     from .models.bookings import Booking
+    from .models.notifications import Notification
 
     # Register blueprints
     from .routes.auth import auth_bp
     from .routes.bookings import bookings_bp
+    from .routes.notifications import notifications_bp
+
     app.register_blueprint(auth_bp)
     app.register_blueprint(bookings_bp)
+    app.register_blueprint(notifications_bp)
 
     # JWT token initialization
     jwt = JWTManager(app)

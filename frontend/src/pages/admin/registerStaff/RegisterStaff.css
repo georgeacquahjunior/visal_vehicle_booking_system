@@ -35,7 +35,7 @@ body {
   background: #ffffff;
   border-radius: 16px;
   padding: 32px;
-  max-width: 800px;
+  max-width: 900px;
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
 }
 
@@ -43,7 +43,7 @@ body {
 .form {
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 10px;
 }
 
 .form-row {
@@ -95,7 +95,7 @@ body {
 .actions {
   display: flex;
   justify-content: flex-end;
-  gap: 12px;
+  gap: 10px;
   margin-top: 20px;
 }
 
@@ -108,13 +108,13 @@ body {
 }
 
 .btn-primary {
-  background: #1896df;
+  background: #187fdf;
   font-size: 14px;
   color: white;
   border: none;
   padding: 12px 20px;
   border-radius: 8px;
-  font-weight: 700;
+  font-weight: 600;
   cursor: pointer;
 }
 

@@ -18,7 +18,7 @@ function ViewBookings() {
       setError(null);
 
       const stored = localStorage.getItem("staff_id");
-      const staffId = stored ? stored : 1;
+      const staffId = stored ? stored : "1";
 
       try {
         const res = await fetch(`${API_BASE}/bookings/staff/${staffId}`);

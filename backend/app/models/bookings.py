@@ -6,10 +6,10 @@ class Booking(db.Model):
 
     id = db.Column(db.Integer, primary_key=True)  # SERIAL PRIMARY KEY
     user_id = db.Column(
-        db.Integer,
+        db.String(20),  # Changed from Integer to String
         db.ForeignKey("users.staff_id", ondelete="CASCADE"),
         nullable=False
-    )  # Foreign key to users
+    )  # Foreign key to users (string now)
     booking_date = db.Column(db.Date, nullable=False)
     start_time = db.Column(db.Time, nullable=False)
     end_time = db.Column(db.Time, nullable=False)
@@ -20,16 +20,18 @@ class Booking(db.Model):
         db.String(20),
         nullable=False,
         default="Pending"
-    )  # Status field, will enforce allowed values manually
+    )  # Status field
     admin_comment = db.Column(db.Text)
     created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False, onupdate=datetime.utcnow)
+    updated_at = db.Column(
+        db.DateTime, default=datetime.utcnow, nullable=False, onupdate=datetime.utcnow
+    )
 
     # Relationship to User
     user = db.relationship("User", backref=db.backref("bookings", lazy=True))
 
     def __init__(self, user_id, booking_date, start_time, end_time, location, purpose, notes=None, status="Pending", admin_comment=None):
-        self.user_id = user_id
+        self.user_id = str(user_id).strip()  # Ensure it's a string
         self.booking_date = booking_date
         self.start_time = start_time
         self.end_time = end_time

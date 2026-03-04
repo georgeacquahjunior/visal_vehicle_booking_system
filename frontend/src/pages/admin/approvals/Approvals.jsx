@@ -17,6 +17,7 @@ function Approvals() {
   const [approveDialogOpen, setApproveDialogOpen] = useState(false);
   const [declineDialogOpen, setDeclineDialogOpen] = useState(false);
   const [declineReason, setDeclineReason] = useState('');
+  const [otherDeclineReason, setOtherDeclineReason] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
 
   // bookings fetched from backend pending endpoint
@@ -159,6 +160,8 @@ function Approvals() {
 
   const handleDecline = (booking) => {
     setSelectedBooking(booking);
+    setDeclineReason('');
+    setOtherDeclineReason('');
     setDeclineDialogOpen(true);
   };
 
@@ -179,12 +182,15 @@ function Approvals() {
   };
 
   const confirmDecline = () => {
-    if (!selectedBooking || !declineReason.trim()) return;
+    const reasonToSend =
+      declineReason === 'Other' ? otherDeclineReason.trim() : declineReason.trim();
+    if (!selectedBooking || !reasonToSend) return;
     (async () => {
-      const ok = await declineBooking(selectedBooking.id, declineReason.trim());
+      const ok = await declineBooking(selectedBooking.id, reasonToSend);
       if (ok) {
         setDeclineDialogOpen(false);
         setDeclineReason('');
+        setOtherDeclineReason('');
         setSelectedBooking(null);
       }
     })();
@@ -555,27 +561,57 @@ function Approvals() {
 
               <div className="form-group">
                 <label className="form-label">Reason for Decline</label>
-                <textarea
+                <select
                   className="form-textarea"
-                  placeholder="Provide a reason for declining this booking..."
                   value={declineReason}
                   onChange={(e) => setDeclineReason(e.target.value)}
-                  rows="4"
-                />
+                >
+                  <option value="" disabled>
+                    Select a decline reason
+                  </option>
+                  <option>Late Booking Submission</option>
+                  <option>Incomplete Booking Form</option>
+                  <option>Personal/Non-Company Business</option>
+                  <option>Overlapping Higher Priority Booking</option>
+                  <option>Public Transport Feasible</option>
+                  <option>Outside Working Hours Without Approval</option>
+                  <option>No Supervisor Approval</option>
+                  <option>Vehicle Maintenance Day</option>
+                  <option>Driver Unavailable</option>
+                  <option>Duplicate Booking for Same Destination</option>
+                  <option>Other</option>
+                </select>
               </div>
+
+              {declineReason === 'Other' && (
+                <div className="form-group">
+                  <label className="form-label">Specify Decline Reason</label>
+                  <input
+                    type="text"
+                    className="form-textarea"
+                    placeholder="Type the decline reason"
+                    value={otherDeclineReason}
+                    onChange={(e) => setOtherDeclineReason(e.target.value)}
+                  />
+                </div>
+              )}
             </div>
 
             <div className="dialog-footer">
               <button className="btn-secondary" onClick={() => {
                 setDeclineDialogOpen(false);
                 setDeclineReason('');
+                setOtherDeclineReason('');
               }}>
                 Cancel
               </button>
               <button 
                 className="btn-reject-full" 
                 onClick={confirmDecline}
-                disabled={!declineReason.trim()}
+                disabled={
+                  !declineReason.trim() ||
+                  (declineReason === 'Other' && !otherDeclineReason.trim())
+                }
               >
                 Decline Booking
               </button>
