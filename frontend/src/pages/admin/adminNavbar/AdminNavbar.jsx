@@ -1,8 +1,19 @@
 import './AdminNavbar.css'
 import logo from '../../../assets/visal_logo.webp'
-import { NavLink} from 'react-router-dom';
+import { NavLink, useNavigate } from 'react-router-dom';
 
 function AdminNavbar() {
+
+  const navigate = useNavigate();
+
+  const handleLogout = () => {
+    // Remove JWT & any user info from localStorage
+    localStorage.removeItem('access_token');
+    localStorage.removeItem('staff_id');
+    // Redirect to login page
+    navigate('/');
+  };
+
   return (
     <div>
           {/* Sidebar */}
@@ -20,7 +31,12 @@ function AdminNavbar() {
             <NavLink to="approvals">Approvals</NavLink>
             <NavLink to="register_staff">Register Staff</NavLink>
             {/* <NavLink to="reports">Reports</NavLink> */}
-            <NavLink to="/" className="logout">Log Out</NavLink>
+            <button 
+            className="logout" 
+            onClick={handleLogout}
+          >
+            <i className="fas fa-door-open"></i> Log Out
+          </button>
         </nav>
       </aside>
     </div>
