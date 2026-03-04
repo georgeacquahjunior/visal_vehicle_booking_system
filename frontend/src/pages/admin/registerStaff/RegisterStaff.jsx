@@ -30,11 +30,14 @@ export default function RegisterStaff() {
     setError("");
     setSuccess("");
 
+    const token = localStorage.getItem("access_token");
+
     try {
       const response = await fetch("http://127.0.0.1:5000/auth/register", {
         method: "POST",
         headers: {
-          "Content-Type": "application/json",
+          "Content-Type": "application/json", // important!
+          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify(formData),
       });
@@ -44,7 +47,7 @@ export default function RegisterStaff() {
       if (!response.ok) {
         setError(data.error || "Registration failed");
       } else {
-        setSuccess("Staff registered successfully!");
+        setSuccess(data.message || "Staff registered successfully!");
         setFormData({
           staff_id: "",
           full_name: "",
@@ -77,7 +80,7 @@ export default function RegisterStaff() {
             <div className="form-group">
               <label>Staff ID</label>
               <input
-                type="number"
+                type="text"
                 name="staff_id"
                 placeholder="101"
                 value={formData.staff_id}
