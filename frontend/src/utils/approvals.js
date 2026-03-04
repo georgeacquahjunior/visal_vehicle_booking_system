@@ -1,6 +1,6 @@
 // src/api/approvals.js
 
-const API_BASE = 'http://127.0.0.1:5000';
+const API_BASE = 'https://visal-vehicle-booking-system.onrender.com';
 
 /* ================================
    FETCH PENDING BOOKINGS
