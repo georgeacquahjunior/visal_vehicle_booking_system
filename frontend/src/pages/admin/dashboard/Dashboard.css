@@ -4,6 +4,7 @@
 
 .dashboard-title {
   margin-bottom: 1.5rem;
+  color: #104179;
 }
 
 .stats-grid {
@@ -13,10 +14,18 @@
 }
 
 .stat-card {
-  background: #ffffff;
   padding: 1.5rem;
   border-radius: 8px;
-  box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+}
+
+.stat-card.total-pending{
+  background-color: #ebe82514;
+  border: 1px solid #ebde25;
+}
+
+.stat-card.total-staff{
+  background-color: #25c0eb10;
+  border: 1px solid #259feb;
 }
 
 .stat-card p {
