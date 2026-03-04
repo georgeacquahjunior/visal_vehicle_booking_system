@@ -298,6 +298,7 @@ npm run test
 
 - Automatic booking conflict detection
 - Email notifications on approval/decline
+- In‑app notifications: users receive bell alerts when bookings are approved or declined (accessible via sidebar)
 - Admin dashboard analytics
 - Deployment to Render / Railway
 - Docker containerization
