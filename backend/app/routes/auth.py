@@ -37,6 +37,7 @@ def register():
 
     # Create user with manual staff_id
     new_user = User(
+        staff_id=staff_id,
         full_name=full_name,
         email=email,
         password=password,
@@ -44,7 +45,6 @@ def register():
         department=department,
         role=role
     )
-    new_user.staff_id = staff_id  # manually set ID
 
     db.session.add(new_user)
     db.session.commit()

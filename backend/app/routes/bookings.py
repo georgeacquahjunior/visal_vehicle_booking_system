@@ -11,13 +11,13 @@ bookings_bp = Blueprint("bookings", __name__, url_prefix="/bookings")
 @bookings_bp.route("/create_booking", methods=["POST"])
 @jwt_required()
 def create_booking():
-    user_identity = get_jwt_identity()
-    data = request.get_json()
+    user_id = get_jwt_identity()  # string staff_id from JWT
+    claims = get_jwt()
 
+    data = request.get_json()
     if not data:
         return jsonify({"error": "No input data provided"}), 400
 
-    user_id = data.get("user_id")
     booking_date = data.get("booking_date")
     start_time = data.get("start_time")
     end_time = data.get("end_time")
@@ -25,43 +25,25 @@ def create_booking():
     purpose = data.get("purpose")
     notes = data.get("notes")
 
-    # Validate required fields first
-    if not all([user_id, booking_date, start_time, end_time, location, purpose]):
-        return jsonify({
-            "error": "user_id, booking_date, start_time, end_time, location, and purpose are required"
-        }), 400
+    # Validate required fields
+    if not all([booking_date, start_time, end_time, location, purpose]):
+        return jsonify({"error": "booking_date, start_time, end_time, location, and purpose are required"}), 400
 
-    # Ensure user_id is a valid integer
-    try:
-        user_id = int(user_id)
-    except (TypeError, ValueError):
-        return jsonify({"error": "user_id must be an integer"}), 400
-
-    # Authenticate: users can only book for themselves, admins can book for others
-    claims = get_jwt()
-    if claims.get("role") != "admin" and user_id != user_identity:
-        return jsonify({"error": "You can only create bookings for yourself"}), 403
-
-    # Check if user exists
-    user = User.query.get(user_id)
-    if not user:
-        return jsonify({"error": "User does not exist"}), 404
-
-    # Convert date & time strings to Python objects
+    # Convert date & time
     try:
         booking_date = datetime.strptime(booking_date, "%Y-%m-%d").date()
         start_time = datetime.strptime(start_time, "%H:%M").time()
         end_time = datetime.strptime(end_time, "%H:%M").time()
     except ValueError:
-        return jsonify({
-            "error": "Invalid date or time format. Use YYYY-MM-DD and HH:MM"
-        }), 400
+        return jsonify({"error": "Invalid date or time format"}), 400
 
-    # Validate time range
     if start_time >= end_time:
-        return jsonify({
-            "error": "start_time must be earlier than end_time"
-        }), 400
+        return jsonify({"error": "start_time must be earlier than end_time"}), 400
+
+    # Ensure user exists
+    user = User.query.get(user_id)
+    if not user:
+        return jsonify({"error": "User does not exist"}), 404
 
     # Create booking
     booking = Booking(
@@ -96,23 +78,16 @@ def create_booking():
 
 
 # GET USER BOOKINGS BY ID
-@bookings_bp.route("/staff/<int:staff_id>", methods=["GET"])
+@bookings_bp.route("/staff/<staff_id>", methods=["GET"])
 def get_bookings_by_staff(staff_id):
 
-    #  Check if staff exists
+    # staff_id is now a string
     user = User.query.filter_by(staff_id=staff_id).first()
     if not user:
         return jsonify({"error": "Staff not found"}), 404
 
-    # Fetch bookings
-    bookings = (
-        Booking.query
-        .filter_by(user_id=staff_id)
-        .order_by(Booking.booking_date.desc())
-        .all()
-    )
+    bookings = Booking.query.filter_by(user_id=staff_id).order_by(Booking.booking_date.desc()).all()
 
-    # Serialize response
     result = []
     for booking in bookings:
         result.append({
@@ -139,7 +114,6 @@ def get_bookings_by_staff(staff_id):
         "total_bookings": len(result),
         "bookings": result
     }), 200
-
 
 # Get all user bookings
 @bookings_bp.route("/schedule_view", methods=["GET"])
@@ -248,6 +222,21 @@ def approve_booking(booking_id):
     booking.admin_comment = admin_comment
     booking.updated_at = datetime.utcnow()
 
+    # generate in-app notification for the requesting user
+    from ..models.notifications import Notification
+    msg = f"Your booking on {booking.booking_date.isoformat()} has been approved. "
+    if admin_comment:
+        msg += f" Comment: {admin_comment}"
+    
+    note = Notification(
+        user_id=booking.user_id,
+        title="Booking Approved",
+        message=msg,
+        type="approved",          
+        booking_id=booking.id
+    )
+
+    db.session.add(note)
     db.session.commit()
 
     return jsonify({
@@ -284,6 +273,20 @@ def decline_booking(booking_id):
     booking.status = "Declined"
     booking.admin_comment = admin_comment
     booking.updated_at = datetime.utcnow()
+
+    # create in-app notification so staff knows their booking was declined
+    from ..models.notifications import Notification
+    msg = f"Your booking on {booking.booking_date.isoformat()} has been declined."
+    if admin_comment:
+        msg += f" Reason: {admin_comment}"
+    note = Notification(
+        user_id=booking.user_id,
+        title="Booking Approved",
+        message=msg,
+        type="declined",          
+        booking_id=booking.id
+    )
+    db.session.add(note)
 
     db.session.commit()
 
