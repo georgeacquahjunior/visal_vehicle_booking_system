@@ -15,19 +15,19 @@ export function timeWindowValidation(startTime, endTime){
      */
 
     if(!startTime || !endTime){
-        return "Start time and end time are required";
+        return "Booking duration is required";
     }
 
     if (startTime >= endTime){
-        return "Start time must be before end time";
+        return "Booking start time must be before end time";
     }
 
     if (startTime < MIN_TIME || startTime > MAX_TIME){
-        return `Start time must be between 09:00 AM and 16:00 PM`;
+        return `Booking duration must be between 09:00 AM and 04:00 PM`;
     }
 
     if (endTime < MIN_TIME || endTime > MAX_TIME){
-        return `End time must be between 09:00 AM and 16:00 PM`;
+        return `Booking duration must be between 09:00 AM and 04:00 PM`;
     }
 
     return null;
