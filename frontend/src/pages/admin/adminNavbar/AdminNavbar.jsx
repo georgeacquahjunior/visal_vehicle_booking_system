@@ -10,6 +10,7 @@ function AdminNavbar() {
     // Remove JWT & any user info from localStorage
     localStorage.removeItem('access_token');
     localStorage.removeItem('staff_id');
+    localStorage.removeItem('role');
     // Redirect to login page
     navigate('/');
   };
