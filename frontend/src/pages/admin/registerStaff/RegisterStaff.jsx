@@ -33,7 +33,7 @@ export default function RegisterStaff() {
     const token = localStorage.getItem("access_token");
 
     try {
-      const response = await fetch("http://127.0.0.1:5000/auth/register", {
+      const response = await fetch("https://visal-vehicle-booking-system.onrender.com/auth/register", {
         method: "POST",
         headers: {
           "Content-Type": "application/json", // important!

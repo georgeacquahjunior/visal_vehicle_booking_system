@@ -13,7 +13,7 @@ function ScheduleView() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  const API_BASE = "http://127.0.0.1:5000";
+  const API_BASE = "https://visal-vehicle-booking-system.onrender.com";
 
   // Update current time every minute for the time indicator line
   useEffect(() => {

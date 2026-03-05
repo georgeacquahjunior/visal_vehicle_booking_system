@@ -54,7 +54,7 @@ function Booking() {
 
     try {
       const response = await fetch(
-        "http://127.0.0.1:5000/bookings/create_booking",
+        "https://visal-vehicle-booking-system.onrender.com/bookings/create_booking",
         {
           method: "POST",
           headers: {

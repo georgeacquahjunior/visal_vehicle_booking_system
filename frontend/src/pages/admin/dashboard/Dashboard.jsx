@@ -12,7 +12,7 @@ function Dashboard() {
   const [staffError, setStaffError] = useState(null);
 
 
-  const API_BASE = 'http://127.0.0.1:5000';
+  const API_BASE = 'https://visal-vehicle-booking-system.onrender.com';
 
   useEffect(() => {
     const fetchPending = async () => {
