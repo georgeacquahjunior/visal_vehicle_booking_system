@@ -23,7 +23,6 @@
   border-bottom: 1px solid #eceaf0;
   padding: 10px 24px;
   margin: 20px;
-  z-index: 10;
   border-radius: 20px;
   box-shadow: 0 10px 22px rgba(15, 23, 42, 0.06);
 }
@@ -213,7 +212,7 @@
   grid-template-columns: 60px 1fr;
   border-bottom: 1px solid #eceaf0;
   background: white;
-  z-index: 10;
+  z-index: 1;
   flex-shrink: 0;
 }
 

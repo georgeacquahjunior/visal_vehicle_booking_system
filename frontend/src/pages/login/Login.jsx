@@ -40,7 +40,7 @@ function Login() {
             <label>Staff/Admin ID</label>
             <input
               type="text"
-              placeholder="101"
+              placeholder="VISAL101"
               value={staff_id}
               onChange={(e) => setStaffId(e.target.value)}
               required
@@ -51,7 +51,7 @@ function Login() {
             <label>Password</label>
             <input
               type="password"
-              placeholder="********"
+              placeholder="************"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
