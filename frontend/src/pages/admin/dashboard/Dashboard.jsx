@@ -1,5 +1,6 @@
 import "./Dashboard.css";
 import React, { useEffect, useState } from 'react';
+import { approveBookingAPI, declineBookingAPI } from '../../utils/approvals';
 
 function Dashboard() {
   const [pending, setPending] = useState([]);
@@ -10,6 +11,13 @@ function Dashboard() {
   const [staff, setStaff] = useState([]);
   const [staffLoading, setStaffLoading] = useState(false);
   const [staffError, setStaffError] = useState(null);
+
+  const [actionMessage, setActionMessage] = useState(null);
+  const [approveDialogOpen, setApproveDialogOpen] = useState(false);
+  const [declineDialogOpen, setDeclineDialogOpen] = useState(false);
+  const [selectedBooking, setSelectedBooking] = useState(null);
+  const [declineReason, setDeclineReason] = useState('');
+  const [otherDeclineReason, setOtherDeclineReason] = useState('');
 
 
   const API_BASE = 'https://visal-vehicle-booking-system.onrender.com';
@@ -89,6 +97,13 @@ function Dashboard() {
     fetchStaff();
   }, []);
 
+  useEffect(() => {
+    if (actionMessage) {
+      const timer = setTimeout(() => setActionMessage(null), 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [actionMessage]);
+
 
   const isPastBooking = (bookingDateStr) => {
     if (!bookingDateStr) return false;
@@ -99,61 +114,48 @@ function Dashboard() {
     return b.getTime() < t.getTime();
   };
 
-  const approveBooking = async (id) => {
-    const token = localStorage.getItem("access_token");
+  const handleApprove = (booking) => {
+    setSelectedBooking(booking);
+    setApproveDialogOpen(true);
+  };
 
-    setProcessingId(id);
+  const handleDecline = (booking) => {
+    setSelectedBooking(booking);
+    setDeclineDialogOpen(true);
+  };
 
+  const confirmApprove = async () => {
+    if (!selectedBooking) return;
+    setProcessingId(selectedBooking.id);
     try {
-      const res = await fetch(`${API_BASE}/bookings/${id}/approve`, {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`
-        },
-        body: JSON.stringify({ admin_comment: '' })
-      });
-
-      if (!res.ok) throw new Error(`Server responded ${res.status}`);
-
-      setPending((p) =>
-        p.map(x => x.id === id ? { ...x, status: 'approved' } : x)
-      );
+      await approveBookingAPI(selectedBooking.id);
+      setPending((p) => p.map(x => x.id === selectedBooking.id ? { ...x, status: 'approved' } : x));
+      setActionMessage('Booking approved successfully.');
     } catch (err) {
-      console.error(err);
       setError(err.message || 'Failed to approve');
     } finally {
       setProcessingId(null);
+      setApproveDialogOpen(false);
+      setSelectedBooking(null);
     }
   };
 
-  const declineBooking = async (id) => {
-    const token = localStorage.getItem("access_token");
-
-    setProcessingId(id);
-
+  const confirmDecline = async () => {
+    if (!selectedBooking) return;
+    const reason = declineReason === 'Other' ? otherDeclineReason : declineReason;
+    setProcessingId(selectedBooking.id);
     try {
-      const res = await fetch(`${API_BASE}/bookings/${id}/decline`, {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`
-        },
-        body: JSON.stringify({
-          admin_comment: 'Declined from dashboard'
-        })
-      });
-
-      if (!res.ok) throw new Error(`Server responded ${res.status}`);
-
-      setPending((p) =>
-        p.map(x => x.id === id ? { ...x, status: 'declined' } : x)
-      );
+      await declineBookingAPI(selectedBooking.id, reason);
+      setPending((p) => p.map(x => x.id === selectedBooking.id ? { ...x, status: 'declined' } : x));
+      setActionMessage('Booking declined.');
     } catch (err) {
-      console.error(err);
       setError(err.message || 'Failed to decline');
     } finally {
       setProcessingId(null);
+      setDeclineDialogOpen(false);
+      setSelectedBooking(null);
+      setDeclineReason('');
+      setOtherDeclineReason('');
     }
   };
   
@@ -161,6 +163,13 @@ function Dashboard() {
     <div className="admin-dashboard">
       {/* Page Title */}
       <h1 className="dashboard-title">Admin Dashboard</h1>
+
+      {actionMessage && (
+        <div className="action-alert success">
+          <span className="action-alert-text">{actionMessage}</span>
+          <button className="action-alert-close" onClick={() => setActionMessage(null)}>×</button>
+        </div>
+      )}
 
       {/* Summary Cards */}
       <div className="stats-grid">
@@ -216,8 +225,8 @@ function Dashboard() {
                   <td>
                     {r.status === 'pending' ? (
                       <>
-                        <button className="approve-btn" onClick={() => approveBooking(r.id)} disabled={processingId === r.id || isPastBooking(r.booking_date)}>Approve</button>
-                        <button className="decline-btn" onClick={() => declineBooking(r.id)} disabled={processingId === r.id || isPastBooking(r.booking_date)}>Decline</button>
+                        <button className="approve-btn" onClick={() => handleApprove(r)} disabled={processingId === r.id || isPastBooking(r.booking_date)}>Approve</button>
+                        <button className="decline-btn" onClick={() => handleDecline(r)} disabled={processingId === r.id || isPastBooking(r.booking_date)}>Decline</button>
                       </>
                     ) : '—'}
                   </td>
@@ -271,6 +280,110 @@ function Dashboard() {
           </table>
         )}
       </div>
+
+      {/* Approve Dialog */}
+      {approveDialogOpen && selectedBooking && (
+        <div className="dialog-overlay">
+          <div className="dialog">
+            <div className="dialog-header">
+              <h3>Approve Booking</h3>
+              <button className="dialog-close" onClick={() => setApproveDialogOpen(false)}>×</button>
+            </div>
+            <div className="dialog-content">
+              <div className="confirm-box success">
+                <span className="material-symbols-outlined">check_circle</span>
+                <div>
+                  <strong>Confirm Approval</strong>
+                  <p>Are you sure you want to approve this booking request?</p>
+                </div>
+              </div>
+              <div className="detail-section">
+                <div className="detail-grid">
+                  <div className="detail-item-col">
+                    <span className="detail-label">Staff</span>
+                    <span className="detail-value">{selectedBooking.userName}</span>
+                  </div>
+                  <div className="detail-item-col">
+                    <span className="detail-label">Date</span>
+                    <span className="detail-value">{selectedBooking.booking_date}</span>
+                  </div>
+                  <div className="detail-item-col">
+                    <span className="detail-label">Time</span>
+                    <span className="detail-value">{selectedBooking.start_time} - {selectedBooking.end_time}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div className="dialog-footer">
+              <button className="btn-secondary" onClick={() => setApproveDialogOpen(false)}>Cancel</button>
+              <button className="btn-approve-full" onClick={confirmApprove} disabled={processingId === selectedBooking.id}>Approve</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Decline Dialog */}
+      {declineDialogOpen && selectedBooking && (
+        <div className="dialog-overlay">
+          <div className="dialog">
+            <div className="dialog-header">
+              <h3>Decline Booking</h3>
+              <button className="dialog-close" onClick={() => setDeclineDialogOpen(false)}>×</button>
+            </div>
+            <div className="dialog-content">
+              <div className="confirm-box danger">
+                <span className="material-symbols-outlined">cancel</span>
+                <div>
+                  <strong>Confirm Decline</strong>
+                  <p>Please provide a reason for declining this booking.</p>
+                </div>
+              </div>
+              <div className="detail-section">
+                <div className="detail-grid">
+                  <div className="detail-item-col">
+                    <span className="detail-label">Staff</span>
+                    <span className="detail-value">{selectedBooking.userName}</span>
+                  </div>
+                  <div className="detail-item-col">
+                    <span className="detail-label">Date</span>
+                    <span className="detail-value">{selectedBooking.booking_date}</span>
+                  </div>
+                  <div className="detail-item-col">
+                    <span className="detail-label">Time</span>
+                    <span className="detail-value">{selectedBooking.start_time} - {selectedBooking.end_time}</span>
+                  </div>
+                </div>
+              </div>
+              <div className="form-group">
+                <label className="form-label">Reason for Decline</label>
+                <select
+                  className="form-select"
+                  value={declineReason}
+                  onChange={(e) => setDeclineReason(e.target.value)}
+                >
+                  <option value="">Select reason</option>
+                  <option value="Schedule conflict">Schedule conflict</option>
+                  <option value="Insufficient resources">Insufficient resources</option>
+                  <option value="Policy violation">Policy violation</option>
+                  <option value="Other">Other</option>
+                </select>
+                {declineReason === 'Other' && (
+                  <textarea
+                    className="form-textarea"
+                    value={otherDeclineReason}
+                    onChange={(e) => setOtherDeclineReason(e.target.value)}
+                    placeholder="Enter custom reason..."
+                  />
+                )}
+              </div>
+            </div>
+            <div className="dialog-footer">
+              <button className="btn-secondary" onClick={() => setDeclineDialogOpen(false)}>Cancel</button>
+              <button className="btn-reject-full" onClick={confirmDecline} disabled={processingId === selectedBooking.id || !declineReason.trim() || (declineReason === 'Other' && !otherDeclineReason.trim())}>Decline</button>
+            </div>
+          </div>
+        </div>
+      )}
 
     </div>
   );
