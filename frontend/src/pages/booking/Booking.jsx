@@ -27,8 +27,11 @@ function Booking() {
     if (!location.trim()) return "Destination is required";
     if (!purpose.trim()) return "Purpose is required";
 
-    const user_id = String(localStorage.getItem("staff_id"));
-    if (!user_id) return "You must be logged in to create a booking";
+    const token = localStorage.getItem("access_token");
+
+    if (!token) {
+      return "You must be logged in to create a booking";
+    }
 
     return null; // validation passed
   };
