@@ -1,6 +1,6 @@
 import "./Dashboard.css";
 import React, { useEffect, useState } from 'react';
-import { approveBookingAPI, declineBookingAPI } from '../../utils/approvals';
+import { approveBookingAPI, declineBookingAPI } from '../../../utils/approvals';
 
 function Dashboard() {
   const [pending, setPending] = useState([]);
