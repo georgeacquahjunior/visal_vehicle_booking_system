@@ -123,7 +123,7 @@ function ViewBookings() {
           onChange={(e) => setSearchTerm(e.target.value)}
         />
         <div className="status-filter">
-          {["all", "approved", "pending", "completed", "cancelled"].map((status) => (
+          {["all", "approved", "pending", "declined"].map((status) => (
             <button
               key={status}
               className={`bookings-filter-btn ${statusFilter === status ? "active" : ""}`}
@@ -150,7 +150,7 @@ function ViewBookings() {
           </div>
         ) : filteredBookings.length === 0 ? (
           <div className="empty-state">
-            <span className="material-symbols-outlined empty-icon">event_busy</span>
+            <span className="material-symbols-outlined empty-icon"><i class="fas fa-exclamation-circle"></i></span>
             <h3>No Bookings Found</h3>
             <p>No bookings match your filters. Try adjusting your search.</p>
           </div>
