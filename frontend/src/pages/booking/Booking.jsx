@@ -123,7 +123,7 @@ function Booking() {
                   onChange={(e) => setStartTime(e.target.value)}
                   required
                 />
-                <p><i className="fa-solid fa-circle-info"></i> booking starts at 09:00 AM</p>
+                <p><i className="fa-solid fa-circle-info"></i> booking starts at 06:00 AM</p>
               </div>
 
               <div>
@@ -134,7 +134,7 @@ function Booking() {
                   onChange={(e) => setEndTime(e.target.value)}
                   required
                 />
-                <p><i className="fa-solid fa-circle-info"></i>booking ends at 4:00 PM</p>
+                <p><i className="fa-solid fa-circle-info"></i>booking ends at 06:00 PM</p>
               </div>
             </div>
           </section>
