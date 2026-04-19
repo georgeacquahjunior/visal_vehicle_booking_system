@@ -548,8 +548,6 @@
   align-items: center;
   gap: 20px;
   padding-bottom: 20px;
-  border-bottom: 1px solid rgba(15, 23, 42, 0.08);
-  background: rgba(241, 245, 249, 0.3);
 }
 
 .approvals-filters-row .search-input-wrapper {
