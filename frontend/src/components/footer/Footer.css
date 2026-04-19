@@ -12,19 +12,24 @@
 }
 
 .login-footer a {
-  font-size: 14px;
-  font-weight: 700;
-  color: #131117;
+  font-size: 12px;
+  font-weight: 500;
+  color: #5d5d5e;
   text-decoration: none;
+  border-bottom: 1px solid #5d5d5e;
 }
 
 .login-footer a:hover {
-  color: #3f2f6a;
+  color: #0a7cff;
+  border-bottom: 1px solid #0a7cff;
 }
 
-.login-footer small {
+.login-footer small{
   display: block;
   margin-top: 10px;
-  font-size: 11px;
+  font-size: 13px;
   color: #ccc;
 }
+
+
+
