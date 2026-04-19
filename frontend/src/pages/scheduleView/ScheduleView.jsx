@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import "./ScheduleView.css";
+import { API_BASE_URL } from "../../config.js";
 
 function ScheduleView() {
   const [currentDate, setCurrentDate] = useState(new Date());
@@ -13,7 +14,7 @@ function ScheduleView() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  const API_BASE = "http://127.0.0.1:5000";
+  const API_BASE = API_BASE_URL;
 
   // Update current time every minute for the time indicator line
   useEffect(() => {
@@ -120,9 +121,9 @@ function ScheduleView() {
 
   const weekDays = getWeekDays();
   
-  // Generate 30-minute time slots from 9 AM to 5 PM
-  const timeSlots = Array.from({ length: 16 }, (_, i) => {
-    const totalMinutes = 9 * 60 + i * 30; // Start at 9:00 AM, increment by 30 mins
+  // Generate 30-minute time slots from 6 AM to 6 PM
+  const timeSlots = Array.from({ length: 24 }, (_, i) => {
+    const totalMinutes = 6 * 60 + i * 30; // Start at 6:00 AM, increment by 30 mins
     const hour = Math.floor(totalMinutes / 60);
     const min = totalMinutes % 60;
     return `${String(hour).padStart(2, '0')}:${String(min).padStart(2, '0')}`;
@@ -227,8 +228,8 @@ function ScheduleView() {
     const hours = now.getHours();
     const minutes = now.getMinutes();
     const totalMinutes = hours * 60 + minutes;
-    const startMinutes = 9 * 60; // 9 AM
-    const endMinutes = 17 * 60; // 5 PM
+    const startMinutes = 6 * 60; // 6 AM
+    const endMinutes = 18 * 60; // 6 PM
 
     if (totalMinutes < startMinutes || totalMinutes > endMinutes) {
       return null; // Outside visible range
