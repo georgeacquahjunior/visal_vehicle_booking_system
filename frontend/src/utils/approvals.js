@@ -1,27 +1,34 @@
 // src/api/approvals.js
+import { API_BASE_URL } from '../config.js';
 
-const API_BASE = 'http://127.0.0.1:5000';
+const API_BASE = API_BASE_URL;
+
+const parseJsonSafe = async (res) => {
+  try {
+    return await res.json();
+  } catch {
+    return null;
+  }
+};
 
 /* ================================
-   FETCH PENDING BOOKINGS
+   FETCH APPROVAL BOOKINGS
 ================================ */
-export const fetchPendingBookings = async () => {
-  const res = await fetch(`${API_BASE}/bookings/pending`);
+export const fetchApprovalBookings = async () => {
+  const res = await fetch(`${API_BASE}/bookings/schedule_view`);
   if (!res.ok) {
     throw new Error(`Server responded ${res.status}`);
   }
 
   const data = await res.json();
-  const remote = Array.isArray(data.pending_bookings)
-    ? data.pending_bookings
-    : [];
+  const remote = Array.isArray(data.bookings) ? data.bookings : [];
 
   // Map backend structure to frontend structure
   return remote.map((b) => ({
     id: b.booking_id,
     vehicleName: b.vehicle_name || b.vehicle || '',
-    startTime: b.start_time,
-    endTime: b.end_time,
+    startTime: formatTime(b.start_time),
+    endTime: formatTime(b.end_time),
     date: b.booking_date ? new Date(b.booking_date) : null,
     purpose: b.purpose,
     location: b.location,
@@ -38,12 +45,30 @@ export const fetchPendingBookings = async () => {
   }));
 };
 
+export const formatTime = (time) => {
+  if (!time) return '';
+  const [hourStr, minuteStr] = time.split(':');
+  const hour = Number(hourStr);
+  const minute = Number(minuteStr);
+  if (Number.isNaN(hour) || Number.isNaN(minute)) return time;
+  const date = new Date();
+  date.setHours(hour, minute, 0, 0);
+  return date.toLocaleTimeString('en-US', {
+    hour: 'numeric',
+    minute: '2-digit',
+    hour12: true,
+  });
+};
+
 
 /* ================================
    APPROVE BOOKING
 ================================ */
 export const approveBookingAPI = async (bookingId) => {
   const token = localStorage.getItem("access_token");
+  if (!token) {
+    throw new Error('Authentication required. Please sign in again.');
+  }
 
   const res = await fetch(
     `${API_BASE}/bookings/${bookingId}/approve`,
@@ -60,8 +85,11 @@ export const approveBookingAPI = async (bookingId) => {
   );
 
   if (!res.ok) {
-    const data = await res.json();
-    throw new Error(data.error || 'Failed to approve booking');
+    const data = await parseJsonSafe(res);
+    throw new Error(
+      (data && (data.error || data.message)) ||
+      `Failed to approve booking (${res.status})`
+    );
   }
 
   return true;
@@ -73,6 +101,9 @@ export const approveBookingAPI = async (bookingId) => {
 ================================ */
 export const declineBookingAPI = async (bookingId, reason) => {
   const token = localStorage.getItem("access_token");
+  if (!token) {
+    throw new Error('Authentication required. Please sign in again.');
+  }
 
   const res = await fetch(
     `${API_BASE}/bookings/${bookingId}/decline`,
@@ -89,17 +120,16 @@ export const declineBookingAPI = async (bookingId, reason) => {
   );
 
   if (!res.ok) {
-    const data = await res.json();
-    throw new Error(data.error || 'Failed to decline booking');
+    const data = await parseJsonSafe(res);
+    throw new Error(
+      (data && (data.error || data.message)) ||
+      `Failed to decline booking (${res.status})`
+    );
   }
 
   return true;
 };
 
-
-/* ================================
-   HELPERS
-================================ */
 
 // Format date
 export const formatDate = (date) => {
