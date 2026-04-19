@@ -14,6 +14,18 @@ import {
   LineChart,
   Line,
 } from "recharts";
+import {
+  FileText,
+  Calendar,
+  TrendingUp,
+  Users,
+  CheckCircle2,
+  AlertCircle,
+  Clock,
+  Filter,
+  Download,
+  X
+} from "lucide-react";
 import "./Reports.css";
 
 // Sample mock data
@@ -136,49 +148,6 @@ const statusColors = {
   Pending: "#ff9800",
 };
 
-// CSV Export function
-const exportToCSV = () => {
-  if (filteredBookings.length === 0) return alert("No data to export!");
-
-  const headers = [
-    "Booking Date",
-    "Staff Name",
-    "Start Time",
-    "End Time",
-    "Duration (hrs)",
-    "Location",
-    "Purpose",
-    "Status",
-    "Admin Comments",
-  ];
-
-  const rows = filteredBookings.map(b => [
-    b.bookingDate,
-    b.staffName,
-    b.startTime,
-    b.endTime,
-    calculateDuration(b.startTime, b.endTime),
-    b.location,
-    b.purpose,
-    b.status,
-    b.adminComments,
-  ]);
-
-  let csvContent =
-    "data:text/csv;charset=utf-8," +
-    [headers, ...rows].map(e => e.join(",")).join("\n");
-
-  const encodedUri = encodeURI(csvContent);
-  const link = document.createElement("a");
-  link.setAttribute("href", encodedUri);
-  const now = new Date().toISOString().split("T")[0];
-  link.setAttribute("download", `bookings_${now}.csv`);
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
-};
-
-
 function Reports() {
   const [bookings, setBookings] = useState(mockBookings);
   const [filteredBookings, setFilteredBookings] = useState(mockBookings);
@@ -186,6 +155,55 @@ function Reports() {
   const [endDate, setEndDate] = useState("");
   const [staffFilter, setStaffFilter] = useState("All");
   const [statusFilter, setStatusFilter] = useState("All");
+  const [exportMessage, setExportMessage] = useState("");
+
+  // CSV Export function
+  const exportToCSV = () => {
+    if (filteredBookings.length === 0) {
+      setExportMessage("No data to export!");
+      setTimeout(() => setExportMessage(""), 3000);
+      return;
+    }
+
+    const headers = [
+      "Booking Date",
+      "Staff Name",
+      "Start Time",
+      "End Time",
+      "Duration (hrs)",
+      "Location",
+      "Purpose",
+      "Status",
+      "Admin Comments",
+    ];
+
+    const rows = filteredBookings.map(b => [
+      b.bookingDate,
+      b.staffName,
+      b.startTime,
+      b.endTime,
+      calculateDuration(b.startTime, b.endTime),
+      b.location,
+      b.purpose,
+      b.status,
+      b.adminComments,
+    ]);
+
+    let csvContent =
+      "data:text/csv;charset=utf-8," +
+      [headers, ...rows].map(e => e.join(",")).join("\n");
+
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    const now = new Date().toISOString().split("T")[0];
+    link.setAttribute("download", `bookings_${now}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    setExportMessage("CSV exported successfully!");
+    setTimeout(() => setExportMessage(""), 3000);
+  };
 
   // Calculate duration in hours
   const calculateDuration = (start, end) => {
@@ -256,77 +274,213 @@ function Reports() {
 
   return (
     <div className="reports-page">
-      <h1>Vehicle Booking Reports</h1>
-
-      {/* Summary Cards */}
-      <div className="cards">
-        <div className="card">
-          <h3>Total Bookings</h3>
-          <p>{totalBookings}</p>
-        </div>
-        <div className="card approved">
-          <h3>Approved</h3>
-          <p>{approved}</p>
-        </div>
-        <div className="card declined">
-          <h3>Declined</h3>
-          <p>{declined}</p>
-        </div>
-        <div className="card pending">
-          <h3>Pending</h3>
-          <p>{pending}</p>
-        </div>
-        <div className="card">
-          <h3>Average Duration</h3>
-          <p>{averageDuration.toFixed(2)} hrs</p>
-        </div>
-        <div className="card">
-          <h3>Most Frequent Purpose</h3>
-          <p>{mostPurpose || "N/A"}</p>
+      <div className="reports-coming-soon-overlay">
+        <div>
+          <p>Coming Soon</p>
+          <h2>Reports under construction</h2>
+          <span>Rich analytics will arrive shortly.</span>
         </div>
       </div>
+      {/* Hero Section */}
+      <section className="reports-hero">
+        <div className="reports-hero-copy">
+          <div className="reports-kicker">Analytics & Insights</div>
+          <h1 className="reports-title">Vehicle Booking Reports</h1>
+          <p className="reports-subtitle">
+            Comprehensive analytics and insights into vehicle bookings, staff usage patterns,
+            and approval trends to optimize fleet management and resource allocation.
+          </p>
+        </div>
 
-      {/* Filters */}
-      <div className="filters">
-        <div>
-          <label>Start Date</label>
-          <input type="date" value={startDate} onChange={e => setStartDate(e.target.value)} />
+        <div className="reports-hero-highlight">
+          <div className="hero-highlight-header">
+            <span className="hero-highlight-label">Report Period</span>
+            <Calendar size={18} />
+          </div>
+          <strong>Real-time Data</strong>
+          <p>Updated booking statistics and usage metrics.</p>
+          <span>Comprehensive fleet analytics</span>
         </div>
-        <div>
-          <label>End Date</label>
-          <input type="date" value={endDate} onChange={e => setEndDate(e.target.value)} />
-        </div>
-        <div>
-          <label>Staff</label>
-          <select value={staffFilter} onChange={e => setStaffFilter(e.target.value)}>
-            {uniqueStaff.map(staff => (
-              <option key={staff} value={staff}>
-                {staff}
-              </option>
-            ))}
-          </select>
-        </div>
-        <div>
-          <label>Status</label>
-          <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)}>
-            <option value="All">All</option>
-            <option value="Approved">Approved</option>
-            <option value="Declined">Declined</option>
-            <option value="Pending">Pending</option>
-          </select>
-        </div>
-        <div>
-          <button onClick={applyFilters}>Apply Filters</button>
-        </div>
-        <div>
-          <button onClick={exportToCSV} style={{ backgroundColor: "#4caf50" }}>
-            Export CSV
+      </section>
+
+      {/* Export Message */}
+      {exportMessage && (
+        <div className="alert-banner success">
+          <CheckCircle2 size={18} />
+          <span>{exportMessage}</span>
+          <button
+            onClick={() => setExportMessage("")}
+            className="alert-close"
+            aria-label="Dismiss notification"
+          >
+            <X size={16} />
           </button>
         </div>
-      </div>
+      )}
 
-      {/* Table */}
-      <div className="table-container">
+      {/* Summary Cards Grid */}
+      <section className="reports-stats-grid">
+        <article className="reports-metric-card reports-metric-card-total">
+          <div className="metric-icon">
+            <FileText size={22} />
+          </div>
+          <div>
+            <p className="metric-label">Total Bookings</p>
+            <h3>{totalBookings}</h3>
+            <span>All booking records</span>
+          </div>
+        </article>
+
+        <article className="reports-metric-card reports-metric-card-approved">
+          <div className="metric-icon">
+            <CheckCircle2 size={22} />
+          </div>
+          <div>
+            <p className="metric-label">Approved</p>
+            <h3>{approved}</h3>
+            <span>Successfully processed</span>
+          </div>
+        </article>
+
+        <article className="reports-metric-card reports-metric-card-pending">
+          <div className="metric-icon">
+            <Clock size={22} />
+          </div>
+          <div>
+            <p className="metric-label">Pending</p>
+            <h3>{pending}</h3>
+            <span>Awaiting approval</span>
+          </div>
+        </article>
+
+        <article className="reports-metric-card reports-metric-card-declined">
+          <div className="metric-icon">
+            <AlertCircle size={22} />
+          </div>
+          <div>
+            <p className="metric-label">Declined</p>
+            <h3>{declined}</h3>
+            <span>Not approved</span>
+          </div>
+        </article>
+
+        <article className="reports-metric-card reports-metric-card-total">
+          <div className="metric-icon">
+            <TrendingUp size={22} />
+          </div>
+          <div>
+            <p className="metric-label">Average Duration</p>
+            <h3>{averageDuration.toFixed(2)} hrs</h3>
+            <span>Per booking</span>
+          </div>
+        </article>
+
+        <article className="reports-metric-card reports-metric-card-total">
+          <div className="metric-icon">
+            <Users size={22} />
+          </div>
+          <div>
+            <p className="metric-label">Top Purpose</p>
+            <h3>{mostPurpose || "N/A"}</h3>
+            <span>Most frequent use</span>
+          </div>
+        </article>
+      </section>
+
+      {/* Filters Panel */}
+      <section className="filters-panel">
+        <div className="panel-header">
+          <div>
+            <p className="panel-eyebrow">Filter & Export</p>
+            <h2>Refine Your Results</h2>
+          </div>
+          <div className="panel-pill">
+            <Filter size={16} />
+            <span>{filteredBookings.length} records shown</span>
+          </div>
+        </div>
+
+        <div className="filters-content">
+          <div className="filter-row">
+            <div className="filter-group">
+              <label className="filter-label">Start Date</label>
+              <input
+                type="date"
+                className="filter-input"
+                value={startDate}
+                onChange={e => setStartDate(e.target.value)}
+              />
+            </div>
+
+            <div className="filter-group">
+              <label className="filter-label">End Date</label>
+              <input
+                type="date"
+                className="filter-input"
+                value={endDate}
+                onChange={e => setEndDate(e.target.value)}
+              />
+            </div>
+
+            <div className="filter-group">
+              <label className="filter-label">Staff Member</label>
+              <select
+                className="filter-select"
+                value={staffFilter}
+                onChange={e => setStaffFilter(e.target.value)}
+              >
+                {uniqueStaff.map(staff => (
+                  <option key={staff} value={staff}>
+                    {staff}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="filter-group">
+              <label className="filter-label">Status</label>
+              <select
+                className="filter-select"
+                value={statusFilter}
+                onChange={e => setStatusFilter(e.target.value)}
+              >
+                <option value="All">All</option>
+                <option value="Approved">Approved</option>
+                <option value="Declined">Declined</option>
+                <option value="Pending">Pending</option>
+              </select>
+            </div>
+          </div>
+
+          <div className="filter-actions">
+            <button className="btn-secondary" onClick={() => {
+              setStartDate("");
+              setEndDate("");
+              setStaffFilter("All");
+              setStatusFilter("All");
+              setFilteredBookings(bookings);
+            }}>
+              Reset Filters
+            </button>
+            <button className="btn-primary" onClick={applyFilters}>
+              <Filter size={16} />
+              Apply Filters
+            </button>
+            <button className="btn-export" onClick={exportToCSV}>
+              <Download size={16} />
+              Export as CSV
+            </button>
+          </div>
+        </div>
+      </section>
+
+      {/* Data Table */}
+      <section className="data-section">
+        <div className="section-header">
+          <h2>Booking Details</h2>
+          <p className="text-muted">{filteredBookings.length} records</p>
+        </div>
+        <div className="table-container">
         <table>
           <thead>
             <tr>
@@ -357,10 +511,16 @@ function Reports() {
             ))}
           </tbody>
         </table>
-      </div>
+        </div>
+      </section>
 
-      {/* Charts */}
-      <div className="charts">
+      {/* Charts Section */}
+      <section className="charts-section">
+        <div className="section-header">
+          <h2>Analytics & Visualizations</h2>
+          <p className="text-muted">Key insights and trends</p>
+        </div>
+        <div className="charts">
         <div className="chart">
           <h3>Bookings by Staff</h3>
           <ResponsiveContainer width="100%" height={250}>
@@ -421,7 +581,8 @@ function Reports() {
             </LineChart>
           </ResponsiveContainer>
         </div>
-      </div>
+        </div>
+      </section>
     </div>
   );
 }
