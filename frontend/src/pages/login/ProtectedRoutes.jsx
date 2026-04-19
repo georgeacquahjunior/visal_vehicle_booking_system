@@ -1,28 +1,20 @@
 import { Navigate } from "react-router-dom";
-import { jwtDecode } from "jwt-decode";
-
 
 function ProtectedRoute({ children, allowedRoles }) {
-  const token = localStorage.getItem("access_token");
+  const role = localStorage.getItem("role");
 
-  if (!token) {
+  if (!role) {
+    // Not logged in
     return <Navigate to="/" replace />;
   }
 
-  try {
-    const decoded = jwtDecode(token);
-    const role = decoded.role;
-
-    if (allowedRoles && !allowedRoles.includes(role)) {
-      return <Navigate to="/" replace />;
-    }
-
-    return children;
-  } catch (error) {
-    // Invalid or expired token
-    localStorage.clear();
+  if (allowedRoles && !allowedRoles.includes(role)) {
+    // Logged in but not allowed
     return <Navigate to="/" replace />;
   }
+
+  // User is allowed
+  return children;
 }
 
 export default ProtectedRoute;
