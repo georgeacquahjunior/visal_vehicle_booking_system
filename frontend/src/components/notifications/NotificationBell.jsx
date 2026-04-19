@@ -25,10 +25,29 @@ function NotificationBell() {
 
   const unreadCount = notifications.filter((n) => !n.is_read).length;
 
+  const formatNotificationTime = (timestamp) => {
+    if (!timestamp) return '';
+    const date = new Date(timestamp);
+    return date.toLocaleString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      hour: 'numeric',
+      minute: '2-digit',
+      hour12: true,
+    });
+  };
+
+  const statusLabel = (type) => {
+    if (!type) return 'Info';
+    return type
+      .toString()
+      .replace(/_/g, ' ')
+      .replace(/\b\w/g, (c) => c.toUpperCase());
+  };
+
   const handleToggle = () => {
     setOpen((o) => !o);
     if (!open) {
-      // when opening we can mark all read (or lazily when user clicks each)
       markAllNotificationsRead().catch(console.error);
       setNotifications((prev) => prev.map((n) => ({ ...n, is_read: true })));
     }
@@ -52,51 +71,53 @@ function NotificationBell() {
         {unreadCount > 0 && <span className="badge">{unreadCount}</span>}
       </button>
       {open && (
-            <div className="notification-dropdown">
-                <div className="dropdown-header">
-                <span>Notifications</span>
-                {notifications.length > 0 && (
-                    <button
-                    className="mark-all"
-                    onClick={() => {
-                        markAllNotificationsRead().catch(console.error);
-                        setNotifications((prev) =>
-                        prev.map((n) => ({ ...n, is_read: true }))
-                        );
-                    }}
-                    >
-                    Mark all as read
-                    </button>
-                )}
-                </div>
+        <div className="notification-dropdown">
+          <div className="dropdown-header">
+            <span>Notifications</span>
+            {notifications.length > 0 && (
+              <button
+                className="mark-all"
+                onClick={() => {
+                  markAllNotificationsRead().catch(console.error);
+                  setNotifications((prev) => prev.map((n) => ({ ...n, is_read: true })));
+                }}
+              >
+                Mark all as read
+              </button>
+            )}
+          </div>
 
-                <div className="dropdown-body">
-                {notifications.length === 0 && (
-                    <div className="empty">
-                    <i className="fas fa-bell-slash"></i>
-                    <p>No notifications yet</p>
-                    </div>
-                )}
+          <div className="dropdown-body">
+            {notifications.length === 0 && (
+              <div className="empty">
+                <i className="fas fa-bell-slash"></i>
+                <p>No notifications yet</p>
+              </div>
+            )}
 
-                {notifications.map((n) => {
-                    const type = n.type || 'info';
-                    return (
-                    <div
-                    key={n.id}
-                    className={`notification-item ${n.is_read ? "" : "unread"} ${type}`}
-                    >
-                    <div className={`type-indicator ${type}`}></div>
-                        <div className="content">
-                            {n.title && <div className="title">{n.title}</div>}
-                            <div className="message">{n.message}</div>
-                            <div className="time">{new Date(n.created_at).toLocaleString()}</div>
-                        </div>
+            {notifications.map((n) => {
+              const type = n.type || 'info';
+              return (
+                <div
+                  key={n.id}
+                  className={`notification-item ${n.is_read ? '' : 'unread'} ${type}`}
+                >
+                  <div className="notification-card">
+                    <div className="notification-card-header">
+                      <div className={`type-indicator ${type}`} />
+                      <div className="notification-title-group">
+                        <div className="title">{n.title || statusLabel(type)}</div>
+                        <div className="time">{formatNotificationTime(n.created_at)}</div>
+                      </div>
                     </div>
-                    );
-                })}
+                    <div className="message">{n.message}</div>
+                  </div>
                 </div>
-            </div>
-        )}
+              );
+            })}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
