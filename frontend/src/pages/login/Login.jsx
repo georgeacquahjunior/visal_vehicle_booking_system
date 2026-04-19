@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import logo from "../../assets/visal_logo.webp";
 import bgImage from "../../assets/bus.png";
 import { useNavigate } from "react-router-dom";
-import Footer from "../../components/footer/Footer";
+import Footer from "../../components/Footer";
 import { loginUser } from "../../utils/login";
 
 function Login() {
