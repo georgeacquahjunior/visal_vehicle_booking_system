@@ -1,0 +1,41 @@
+import threading
+import time
+from datetime import datetime, timedelta, time as time_cls
+from flask import current_app
+
+from .email_service import send_daily_late_booking_summary
+
+
+def _seconds_until_next_run(app):
+    now = datetime.now()
+    target_hour = app.config.get("BOOKING_SUMMARY_HOUR", 17)
+    target_time = time_cls(target_hour, 0)
+    target = datetime.combine(now.date(), target_time)
+
+    if now >= target:
+        target += timedelta(days=1)
+
+    return (target - now).total_seconds(), target
+
+
+def _scheduler_loop(app):
+    with app.app_context():
+        while True:
+            seconds, target = _seconds_until_next_run(app)
+            current_app.logger.info(
+                f"Daily booking summary scheduler sleeping until {target.isoformat()} ({int(seconds)} seconds)"
+            )
+            time.sleep(seconds)
+
+            try:
+                send_daily_late_booking_summary()
+            except Exception as exc:
+                current_app.logger.error(f"Daily booking summary task failed: {exc}")
+
+            # small buffer so the loop recalculates the next run time cleanly
+            time.sleep(60)
+
+
+def start_daily_summary_scheduler(app):
+    thread = threading.Thread(target=_scheduler_loop, args=(app,), daemon=True)
+    thread.start()
