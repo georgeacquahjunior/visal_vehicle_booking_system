@@ -23,12 +23,14 @@ def _scheduler_loop(app):
         while True:
             seconds, target = _seconds_until_next_run(app)
             current_app.logger.info(
-                f"Daily booking summary scheduler sleeping until {target.isoformat()} ({int(seconds)} seconds)"
+                f"Daily booking summary scheduler: next run at {target.isoformat()} ({int(seconds)} seconds from now)"
             )
             time.sleep(seconds)
 
             try:
+                current_app.logger.info("Running daily booking summary task...")
                 send_daily_late_booking_summary()
+                current_app.logger.info("Daily booking summary task completed")
             except Exception as exc:
                 current_app.logger.error(f"Daily booking summary task failed: {exc}")
 
