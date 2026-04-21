@@ -27,8 +27,8 @@ class Config:
     BOOKING_SUMMARY_HOUR = int(os.getenv("BOOKING_SUMMARY_HOUR", "17"))
     START_EMAIL_SCHEDULER = os.getenv("START_EMAIL_SCHEDULER", "True").lower() == "true"
 
-    # CORS configuration
-    CORS_ORIGINS = os.getenv("CORS_ORIGINS", "http://localhost:5173,http://127.0.0.1:5173").split(",")
+    # CORS configuration - production ready
+    CORS_ORIGINS = os.getenv("CORS_ORIGINS", "https://book-beta.vaarde.com,http://localhost:5173,http://127.0.0.1:5173").split(",")
     CORS_METHODS = ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"]
     CORS_HEADERS = ["Content-Type", "Authorization", "X-Requested-With"]
     CORS_SUPPORTS_CREDENTIALS = True
