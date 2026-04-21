@@ -1,6 +1,6 @@
 // Frontend configuration
 // Uses environment variable VITE_API_BASE, falls back to local development URL
-export const API_BASE_URL = import.meta.env.VITE_API_BASE || 'http://127.0.0.1:5000';
+export const API_BASE_URL = import.meta.env.VITE_API_BASE || 'https://your-backend-service.onrender.com';
 
 // Time window constants for bookings
 export const MIN_TIME = "06:00";
