@@ -5,8 +5,11 @@ export const loginUser = async (staff_id, password, setError, setLoading, naviga
   setLoading(true);
   setError("");
 
+  const fullUrl = `${API_BASE_URL}/auth/login`;
+  console.log('Attempting login to:', fullUrl);
+
   try {
-    const response = await fetch(`${API_BASE_URL}/auth/login`, {
+    const response = await fetch(fullUrl, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -40,7 +43,16 @@ export const loginUser = async (staff_id, password, setError, setLoading, naviga
     }
   } catch (err) {
     console.error("Error logging in:", err);
-    setError("Network error. Please try again.");
+    console.error("API_BASE_URL being used:", API_BASE_URL);
+    console.error("Full URL being called:", fullUrl);
+    // Provide more specific error messages
+    if (err.name === 'TypeError' && err.message === 'Failed to fetch') {
+      setError(`Cannot connect to server (${fullUrl}). Please check your internet connection or contact admin.`);
+    } else if (err.name === 'TypeError' && err.message.includes('NetworkError')) {
+      setError(`Network error. The server (${fullUrl}) may be down or the URL is incorrect.`);
+    } else {
+      setError("An unexpected error occurred. Please try again.");
+    }
   } finally {
     setLoading(false);
   }
