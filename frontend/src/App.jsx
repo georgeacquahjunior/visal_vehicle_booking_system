@@ -11,7 +11,6 @@ import Approvals from './pages/admin/approvals/Approvals'
 import Reports from './pages/admin/reports/Reports'
 import ProtectedRoute from './pages/login/ProtectedRoutes'
 import RegisterStaff from './pages/admin/registerStaff/RegisterStaff'
-import TailwindTest from './pages/TailwindTest'
 import Changelog from './pages/Changelog'
 
 function App() {
@@ -31,7 +30,6 @@ function App() {
           <Route path="reports" element={<Reports />} />
         </Route>
         <Route path="/changelog" element={<Changelog />} />
-        <Route path="/tailwind-test" element={<TailwindTest />} />
       </Routes>
     </BrowserRouter>
   )
