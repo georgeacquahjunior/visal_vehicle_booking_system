@@ -1,2 +1,7 @@
 backend/run_tests.py
 backend/.env.local
+bug-to-resolve.md
+database_documentation.md
+backend/RENDER_DEPLOYMENT.md
+backend/.env.example
+backend/alembic/README
