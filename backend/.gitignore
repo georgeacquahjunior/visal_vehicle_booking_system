@@ -116,4 +116,5 @@ dmypy.json
 .pyre/
 
 # Scripts
-./db_test.py
+db_test.py
+add_users.py

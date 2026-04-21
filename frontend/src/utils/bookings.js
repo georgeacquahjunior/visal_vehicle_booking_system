@@ -7,8 +7,8 @@ export function timeWindowValidation(startTime, endTime){
      * Validates if a time range is within working hours
      * @param {string} startTime - "HH:MM"
      * @param {string} endTime - "HH:MM"
-     * @param {string} MIN_TIME - default "09:00"
-     * @param {string} MAX_TIME - default "16:00"
+     * @param {string} MIN_TIME - default "06:00"
+     * @param {string} MAX_TIME - default "18:00"
      * @returns {string|null} Error message or null if valid
      */
 

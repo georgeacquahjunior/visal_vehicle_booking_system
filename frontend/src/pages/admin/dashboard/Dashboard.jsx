@@ -124,11 +124,19 @@ function Dashboard() {
     return `${parts[0][0]}${parts[1][0]}`.toUpperCase();
   };
 
-  const approveBooking = async (id) => {
-    const token = localStorage.getItem("access_token");
+  const handleApprove = (booking) => {
+    setSelectedBooking(booking);
+    setApproveDialogOpen(true);
+  };
 
-    setProcessingId(id);
+  const handleDecline = (booking) => {
+    setSelectedBooking(booking);
+    setDeclineDialogOpen(true);
+  };
 
+  const confirmApprove = async () => {
+    if (!selectedBooking) return;
+    setProcessingId(selectedBooking.id);
     try {
       const res = await fetch(`${API_BASE}/bookings/${id}/approve`, {
         method: "PATCH",
@@ -148,14 +156,15 @@ function Dashboard() {
       setError(err.message || "Failed to approve");
     } finally {
       setProcessingId(null);
+      setApproveDialogOpen(false);
+      setSelectedBooking(null);
     }
   };
 
-  const declineBooking = async (id) => {
-    const token = localStorage.getItem("access_token");
-
-    setProcessingId(id);
-
+  const confirmDecline = async () => {
+    if (!selectedBooking) return;
+    const reason = declineReason === 'Other' ? otherDeclineReason : declineReason;
+    setProcessingId(selectedBooking.id);
     try {
       const res = await fetch(`${API_BASE}/bookings/${id}/decline`, {
         method: "PATCH",
@@ -177,6 +186,10 @@ function Dashboard() {
       setError(err.message || "Failed to decline");
     } finally {
       setProcessingId(null);
+      setDeclineDialogOpen(false);
+      setSelectedBooking(null);
+      setDeclineReason('');
+      setOtherDeclineReason('');
     }
   };
 
