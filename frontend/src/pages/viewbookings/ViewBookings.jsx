@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from "react";
+import { Clock, MapPin, FileText, CheckCircle, AlertCircle, XCircle, BarChart3 } from "lucide-react";
 import "./ViewBookings.css";
+import { API_BASE_URL } from "../../config.js";
 
 function ViewBookings() {
   const [statusFilter, setStatusFilter] = useState("all");
@@ -7,10 +9,11 @@ function ViewBookings() {
   const [selectedBooking, setSelectedBooking] = useState(null);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [bookings, setBookings] = useState([]);
+  const [visibleCount, setVisibleCount] = useState(4);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  const API_BASE = "http://127.0.0.1:5000";
+  const API_BASE = API_BASE_URL;
 
   useEffect(() => {
     const fetchBookings = async () => {
@@ -95,35 +98,60 @@ function ViewBookings() {
     declined: sourceBookings.filter((b) => b.status === "declined").length,
   };
 
+  const displayedBookings = filteredBookings.slice(0, visibleCount);
+  const hasMoreBookings = filteredBookings.length > visibleCount;
+
+  useEffect(() => {
+    setVisibleCount(4);
+  }, [statusFilter, searchTerm, bookings]);
+
   return (
     <div className="view-bookings">
-      {/* Header */}
-      <header className="vb-header">
-        <h1>My Bookings</h1>
-        <p>View and manage all your vehicle bookings</p>
-      </header>
-
-      {/* Stats */}
-      <section className="vb-stats">
-        {Object.entries(statusCounts).map(([key, count]) => (
-          <div key={key} className={`stat-card ${key}`}>
-            <div className="stat-number">{count}</div>
-            <div className="stat-label">{key.charAt(0).toUpperCase() + key.slice(1)}</div>
+      <div className="vb-container">
+        {/* Header */}
+        <header className="vb-header">
+          <div>
+            <h1>My Bookings</h1>
+            <p>Track, manage, and review all your vehicle booking requests.</p>
           </div>
-        ))}
+        </header>
+
+        {/* Stats */}
+        <section className="vb-stats">
+        {Object.entries(statusCounts).map(([key, count]) => {
+          const getIcon = (status) => {
+            switch(status) {
+              case 'all': return <BarChart3 size={18} />;
+              case 'approved': return <CheckCircle size={18} />;
+              case 'pending': return <Clock size={18} />;
+              case 'declined': return <XCircle size={18} />;
+              default: return null;
+            }
+          };
+          
+          return (
+            <div key={key} className={`stat-card ${key}`}>
+              <div className="stat-number">{count}</div>
+              <div className="stat-label">
+                {getIcon(key)}
+                <span>{key.charAt(0).toUpperCase() + key.slice(1)}</span>
+              </div>
+            </div>
+          );
+        })}
       </section>
 
-      {/* Filters */}
-      <section className="vb-filters">
+        {/* Filters */}
+        <section className="vb-filters">
         <input
           type="text"
-          className="search-input"
+          className="vb-search-input"
           placeholder="Search by vehicle, purpose, or location..."
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
         />
         <div className="status-filter">
-          {["all", "approved", "pending", "completed", "cancelled"].map((status) => (
+          {["all", "approved", "pending", "declined"].map((status) => (
             <button
               key={status}
               className={`bookings-filter-btn ${statusFilter === status ? "active" : ""}`}
@@ -139,25 +167,26 @@ function ViewBookings() {
       <section className="vb-content">
         {loading ? (
           <div className="empty-state">
-            <span className="material-symbols-outlined empty-icon"><i class="fa-regular fa-hourglass"></i></span>
+            <Clock size={48} />
             <h3>Loading bookings...</h3>
           </div>
         ) : error ? (
           <div className="empty-state">
-            <span className="material-symbols-outlined empty-icon"><i class="fas fa-exclamation-circle"></i></span>
+            <AlertCircle size={48} />
             <h3>Failed to load bookings</h3>
             <p>{error}</p>
           </div>
         ) : filteredBookings.length === 0 ? (
           <div className="empty-state">
-            <span className="material-symbols-outlined empty-icon">event_busy</span>
+            <FileText size={48} />
             <h3>No Bookings Found</h3>
             <p>No bookings match your filters. Try adjusting your search.</p>
           </div>
         ) : (
-          <div className="bookings-grid">
-            {filteredBookings.map((booking) => (
-              <div key={booking.id} className={`booking-item ${getStatusClass(booking.status)}`}>
+          <>
+            <div className="bookings-grid">
+              {displayedBookings.map((booking) => (
+                <div key={booking.id} className={`booking-item ${getStatusClass(booking.status)}`}>
                 <div className="vb-booking-header">
                   <div>
                     <h3>{booking.purpose}</h3>
@@ -187,8 +216,28 @@ function ViewBookings() {
               </div>
             ))}
           </div>
+
+          {filteredBookings.length > 0 && (
+            <div className="vb-results-summary">
+              Showing {Math.min(visibleCount, filteredBookings.length)} of {filteredBookings.length} bookings
+            </div>
+          )}
+
+          {hasMoreBookings && (
+            <div className="load-more-container">
+              <button
+                type="button"
+                className="load-more-btn"
+                onClick={() => setVisibleCount((prev) => prev + 4)}
+              >
+                Load more bookings
+              </button>
+            </div>
+          )}
+        </>
         )}
       </section>
+      </div>
     </div>
   );
 }

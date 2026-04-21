@@ -5,307 +5,149 @@
 ![PostgreSQL](https://img.shields.io/badge/Database-PostgreSQL-336791?logo=postgresql)
 ![JWT](https://img.shields.io/badge/Auth-JWT-orange)
 
+A full-stack vehicle booking management system for staff vehicle requests and admin approvals with secure JWT authentication and email notifications.
 
-A full-stack vehicle booking management system that allows staff to request vehicles and admins to approve or decline bookings through a secure, role-based workflow.
-
----
-
-# 📌 Overview
-
-The VISAL Vehicle Booking System eliminates manual coordination and spreadsheet-based tracking by centralizing:
-
-- Staff vehicle request submission  
-- Admin approval / decline workflow  
-- Booking history tracking  
-- Schedule visibility  
-- Conflict reduction  
-- Secure JWT authentication  
-
-This system improves transparency, operational efficiency, and accountability in vehicle allocation.
+**Windows-Only Setup**: This project is configured specifically for Windows environments.
 
 ---
 
-# ✨ Features
+## 📋 Table of Contents
 
-## 👤 Staff Features
-
-- Secure login using JWT
-- Create booking requests
-- View booking history
-- Track booking status (Pending / Approved / Declined)
-
-## 🛠 Admin Features
-
-- View all pending bookings
-- Approve bookings with comments
-- Decline bookings with reasons
-- View full booking history
-- Monitor schedule conflicts
-
-## 🔐 Security Features
-
-- JWT-based authentication
-- Role-based access control
-- Protected backend routes
-- Environment variable configuration
-- Secure password handling
----
-# 🧱 Tech Stack
-
-## Frontend
-
-- React
-- Vite
-- React Router
-- CSS (component-scoped)
-
-## Backend
-
-- Flask
-- Flask-SQLAlchemy
-- Flask-Migrate
-- Flask-JWT-Extended
-- Flask-Mail
-
-## Database
-
-- PostgreSQL
-
-## Testing & Tooling
-
-- Pytest
-- Vitest
-- ESLint
+- [Features](#-features)
+- [Tech Stack](#-tech-stack)
+- [Quick Start](#-quick-start)
+- [Documentation](#-documentation)
+- [Testing](#-testing)
+- [Future Improvements](#-future-improvements)
+- [License](#-license)
 
 ---
 
-# 📂 Project Structure
+## ✨ Features
 
-```
-visal_vehicle_booking_system/
-│
-├── backend/
-│   ├── app/
-│   │   ├── routes/
-│   │   ├── models/
-│   │   └── extensions.py
-│   ├── config.py
-│   ├── run.py
-|   └── requirements.txt
-│
-├── frontend/
-│   ├── src/
-│   │   ├── public/
-│   │   ├── assets/
-│   │   ├── pages/
-│   │   ├── components/
-│   │   └── utils/
-│   └── package.json
-│
-├── index.html
-│
-└── README.md
-```
+### 👤 Staff Features
+- Secure JWT-based login
+- Submit vehicle booking requests
+- View personal booking history and status
+- Real-time booking status updates
+
+### 🛠 Admin Features
+- Approve or decline booking requests
+- Add comments to decisions
+- View all bookings and schedule conflicts
+- Register new staff accounts
+- Access reports and analytics (coming soon)
+
+### 🔐 Security & Notifications
+- Role-based access control (Staff/Admin)
+- JWT authentication with protected routes
+- Automatic email notifications for approvals/declines
+- Daily summary emails for late bookings
+- In-app notification system
 
 ---
 
-# 🚀 Getting Started
+## 🧱 Tech Stack
 
-## ✅ Prerequisites
+### Frontend
+- **React** with Vite
+- **React Router** for navigation
+- **Lucide Icons** and custom CSS
+- **Tailwind CSS** for styling
 
-- Python 3.10+
-- Node.js 18+
-- PostgreSQL installed and running
+### Backend
+- **Flask** with SQLAlchemy
+- **Flask-JWT-Extended** for authentication
+- **Flask-Mail** for email notifications
+- **PostgreSQL** database
+
+### Development Tools
+- **Pytest** for backend testing
+- **Vitest** for frontend testing
+- **Alembic** for database migrations
 
 ---
 
-## 1️⃣ Clone Repository
+## 🚀 Quick Start
 
-```bash
-git clone <https://github.com/georgeacquahjunior/visal_vehicle_booking_system.git>
-cd visal_vehicle_booking_system
-```
+### Prerequisites
+- Python 3.10+ (Windows)
+- Node.js 18+ (Windows)
+- PostgreSQL (Windows)
 
+### Setup Steps
 
+1. **Clone the repository**
+   ```bash
+   git clone https://github.com/georgeacquahjunior/visal_vehicle_booking_system.git
+   cd visal_vehicle_booking_system
+   ```
 
-## 2️⃣ Backend Setup
+2. **Backend Setup**
+   ```bash
+   cd backend
+   python -m venv .venv
+   .\.venv\Scripts\Activate.ps1
+   pip install -r requirements.txt
+   # Configure .env file (see backend/backend_documentation.md)
+   python run.py
+   ```
 
+3. **Frontend Setup** (in new terminal)
+   ```bash
+   cd frontend
+   npm install
+   npm run dev
+   ```
+
+4. **Access the application**
+   - Frontend: http://127.0.0.1:5173
+   - Backend API: http://127.0.0.1:5000
+
+### Test Credentials
+See `frontend/frontend_ui_update.md` for test admin and staff accounts.
+
+---
+
+## 📚 Documentation
+
+For detailed information, refer to the dedicated documentation files:
+
+- **[Frontend Documentation](frontend/frontend_ui_update.md)**: UI components, pages, navigation, and user flows
+- **[Backend Documentation](backend/backend_documentation.md)**: API endpoints, models, services, and configuration
+
+These files contain comprehensive guides for development, API usage, and project maintenance.
+
+---
+
+## 🧪 Testing
+
+### Backend Tests
 ```bash
 cd backend
-python -m venv .venv
+.\venv\Scripts\Activate.ps1
+python run_tests.py
+# Or: python -m pytest --cov=app --cov-report=html
 ```
 
-### Activate Virtual Environment
-
-```bash
-# Windows
-.\.venv\Scripts\Activate.ps1
-
-# macOS/Linux
-source .venv/bin/activate
-```
-
-### Install Dependencies
-
-```bash
-pip install -r requirements.txt
-```
-
-If you encounter missing module errors:
-
-```bash
-pip install Flask-Migrate Flask-JWT-Extended psycopg2-binary
-```
-
----
-
-### Create Environment Variables (`backend/.env`)
-
-```env
-SECRET_KEY=change-me
-JWT_SECRET_KEY=change-me-too
-JWT_ACCESS_TOKEN_EXPIRES_HOURS=8
-DATABASE_URL=postgresql://postgres:your_password@localhost:5432/vehicle_booking_db
-```
-
----
-
-### Run Backend Server
-
-```bash
-python run.py
-```
-
-Backend URL:
-
-```
-http://127.0.0.1:5000
-```
-
----
-
-## 3️⃣ Frontend Setup
-
-```bash
-cd ../frontend
-npm install
-npm run dev
-```
-
-Frontend URL:
-
-```
-http://127.0.0.1:5173
-```
-
----
-
-# 🔄 API Usage Examples
-
-## 🔑 Login (JWT Issued)
-
-```bash
-curl -X POST http://127.0.0.1:5000/auth/login \
-  -H "Content-Type: application/json" \
-  -d "{\"staff_id\":\"101\",\"password\":\"your_password\"}"
-```
-
-Expected response:
-
-```json
-{
-  "staff_id": "101",
-  "role": "staff",
-  "access_token": "your_jwt_token_here"
-}
-```
-
----
-
-## 📅 Create Booking
-
-```bash
-curl -X POST http://127.0.0.1:5000/bookings/create_booking \
-  -H "Content-Type: application/json" \
-  -d "{
-    \"user_id\": 101,
-    \"booking_date\": \"2026-02-20\",
-    \"start_time\": \"09:00\",
-    \"end_time\": \"11:00\",
-    \"location\": \"Main Office\",
-    \"purpose\": \"Client Visit\",
-    \"notes\": \"Bring documents\"
-  }"
-```
-
----
-
-## 📋 Get Staff Bookings
-
-```bash
-curl http://127.0.0.1:5000/bookings/staff/101
-```
-
----
-
-## 🛠 Admin: Get Pending Bookings
-
-```bash
-curl http://127.0.0.1:5000/bookings/pending
-```
-
----
-
-## ✅ Approve Booking
-
-```bash
-curl -X PATCH http://127.0.0.1:5000/bookings/12/approve \
-  -H "Content-Type: application/json" \
-  -d "{\"admin_comment\":\"Approved by admin\"}"
-```
-
----
-
-## ❌ Decline Booking
-
-```bash
-curl -X PATCH http://127.0.0.1:5000/bookings/12/decline \
-  -H "Content-Type: application/json" \
-  -d "{\"admin_comment\":\"Vehicle unavailable for selected time\"}"
-```
-
----
-
-# 🧪 Testing
-
-## Backend
-
-```bash
-cd backend
-pytest
-```
-
-## Frontend
-
+### Frontend Tests
 ```bash
 cd frontend
-npm run lint
 npm run test
 ```
 
+---
 
-# 🔮 Future Improvements
+## 🔮 Future Improvements
 
 - Automatic booking conflict detection
-- Email notifications on approval/decline
-- In‑app notifications: users receive bell alerts when bookings are approved or declined (accessible via sidebar)
-- Admin dashboard analytics
-- Deployment to Render / Railway
+- Enhanced admin dashboard analytics
+- Mobile-responsive design improvements
 - Docker containerization
 
 ---
 
-# 📜 License
+## 📜 License
 
 No license file is currently attached.
 
@@ -315,9 +157,9 @@ Until a license is added, this project is:
 
 ---
 
-# 👨‍💻 Author
+## 👨‍💻 Author
 
-Developed as a full-stack vehicle booking system for structured approval workflows, secure authentication, and scalable architecture.
+Developed as a comprehensive vehicle booking system for efficient fleet management and approval workflows.
 
 ---
 

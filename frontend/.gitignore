@@ -22,3 +22,8 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Files
+src/pages/TailwindTest.jsx
+changelog_doc.md
+.env

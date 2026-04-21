@@ -11,6 +11,8 @@ import Approvals from './pages/admin/approvals/Approvals'
 import Reports from './pages/admin/reports/Reports'
 import ProtectedRoute from './pages/login/ProtectedRoutes'
 import RegisterStaff from './pages/admin/registerStaff/RegisterStaff'
+import TailwindTest from './pages/TailwindTest'
+import Changelog from './pages/Changelog'
 
 function App() {
   return (
@@ -22,12 +24,14 @@ function App() {
           <Route path="scheduleview" element={<ScheduleView />} />
           <Route path="viewbookings" element={<ViewBookings />} />
         </Route>
-        <Route path="/admin_dashboard" element={<ProtectedRoute ><AdminRootLayout /></ProtectedRoute>}>
+        <Route path="/admin-dashboard" element={<ProtectedRoute ><AdminRootLayout /></ProtectedRoute>}>
           <Route index element={<Dashboard />} />
           <Route path="approvals" element={<Approvals />} />
-          <Route path="register_staff" element={<RegisterStaff />} />
+          <Route path="register-staff" element={<RegisterStaff />} />
           <Route path="reports" element={<Reports />} />
         </Route>
+        <Route path="/changelog" element={<Changelog />} />
+        <Route path="/tailwind-test" element={<TailwindTest />} />
       </Routes>
     </BrowserRouter>
   )

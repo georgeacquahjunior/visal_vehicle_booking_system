@@ -1,46 +1,68 @@
-import './AdminNavbar.css'
-import logo from '../../../assets/visal_logo.webp'
-import { NavLink, useNavigate } from 'react-router-dom';
+import "./AdminNavbar.css";
+import logo from "../../../assets/visal_logo.webp";
+import React from "react";
+import { NavLink } from "react-router-dom";
+import { ClipboardCheck, FileText, LayoutDashboard, UserPlus } from "lucide-react";
 
-function AdminNavbar() {
+function AdminNavbar({ collapsed, userName, userRole }) {
+  const letterFor = (name) => {
+    if (!name) return "";
+    return name.trim().charAt(0).toUpperCase();
+  };
 
-  const navigate = useNavigate();
-
-  const handleLogout = () => {
-    // Remove JWT & any user info from localStorage
-    localStorage.removeItem('access_token');
-    localStorage.removeItem('staff_id');
-    // Redirect to login page
-    navigate('/');
+  const colorForName = (name) => {
+    if (!name) return "#6c7ae0";
+    const code = name.split("").reduce((acc, c) => acc + c.charCodeAt(0), 0);
+    const colors = ["#6c7ae0", "#f59e0b", "#10b981", "#ef4444", "#6366f1", "#0ea5e9"];
+    return colors[code % colors.length];
   };
 
   return (
-    <div>
-          {/* Sidebar */}
-      <aside className="sidebar">
-        <div className="brand">
-          <img src={logo} alt="" />
-          <div>
-            <h2>Visal Vehicle Booking</h2>
+    <aside className={`sidebar ${collapsed ? "collapsed" : ""}`}>
+      <div className="sidebar-brand">
+        <img src={logo} alt="Visal logo" />
+        {!collapsed && (
+          <div className="brand-text">
+            <h2>Visal - Re </h2>
             <p>Admin Portal</p>
           </div>
-        </div>
+        )}
+      </div>
 
-        <nav className="nav">
-            <NavLink to="/admin_dashboard" end>Dashboard</NavLink>
-            <NavLink to="approvals">Approvals</NavLink>
-            <NavLink to="register_staff">Register Staff</NavLink>
-            {/* <NavLink to="reports">Reports</NavLink> */}
-            <button 
-            className="logout" 
-            onClick={handleLogout}
-          >
-            <i className="fas fa-door-open"></i> Log Out
-          </button>
-        </nav>
-      </aside>
-    </div>
-  )
+      <nav className="nav-login">
+        <NavLink to="/admin-dashboard" end className={({ isActive }) => (isActive ? "active" : "")}>
+          <LayoutDashboard size={18} />
+          <span>Overview</span>
+        </NavLink>
+        <NavLink to="approvals" className={({ isActive }) => (isActive ? "active" : "")}>
+          <ClipboardCheck size={18} />
+          <span>Approvals</span>
+        </NavLink>
+        <NavLink to="register-staff" className={({ isActive }) => (isActive ? "active" : "")}>
+          <UserPlus size={18} />
+          <span>Register Staff</span>
+        </NavLink>
+        <NavLink to="reports" className={({ isActive }) => (isActive ? "active" : "")}>
+          <FileText size={18} />
+          <span>Reports</span>
+        </NavLink>
+      </nav>
+
+      <div className="sidebar-footer">
+        <div className="footer-user">
+          <div className="avatar" style={{ backgroundColor: colorForName(userName) }}>
+            {letterFor(userName) || "A"}
+          </div>
+          {!collapsed && (
+            <div className="user-info">
+              <div className="user-name">{userName || "Admin User"}</div>
+              <div className="user-role">{userRole || "Administrator"}</div>
+            </div>
+          )}
+        </div>
+      </div>
+    </aside>
+  );
 }
 
-export default AdminNavbar
+export default AdminNavbar;
