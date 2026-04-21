@@ -6,6 +6,12 @@ from ..models.users import User
 auth_bp = Blueprint("auth", __name__, url_prefix="/auth")
 
 
+# Health check endpoint for Render
+@auth_bp.route("/health", methods=["GET"])
+def health_check():
+    return jsonify({"status": "healthy", "service": "vehicle-booking-backend"}), 200
+
+
 # Staff Registration (Admin only)
 @auth_bp.route("/register", methods=["POST"])
 @jwt_required()
