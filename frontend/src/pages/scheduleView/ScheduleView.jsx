@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import "./ScheduleView.css";
+import { API_BASE_URL } from "../../config.js";
 
 function ScheduleView() {
   const [currentDate, setCurrentDate] = useState(new Date());
@@ -13,7 +14,7 @@ function ScheduleView() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  const API_BASE = "https://visal-vehicle-booking-system.onrender.com";
+  const API_BASE = API_BASE_URL;
 
   // Update current time every minute for the time indicator line
   useEffect(() => {

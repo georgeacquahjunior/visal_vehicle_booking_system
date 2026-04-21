@@ -4,6 +4,7 @@ from flask_jwt_extended import jwt_required, get_jwt_identity, get_jwt
 from .. import db
 from ..models.bookings import Booking
 from ..models.users import User
+from ..services.email_service import send_booking_notification
 
 bookings_bp = Blueprint("bookings", __name__, url_prefix="/bookings")
 
@@ -239,6 +240,24 @@ def approve_booking(booking_id):
     db.session.add(note)
     db.session.commit()
 
+    # Send email notification
+    user = User.query.get(booking.user_id)
+    if user and user.email:
+        email_subject = "Booking Approved - Vehicle Booking System"
+        email_body = f"Dear {user.full_name},\n\nYour vehicle booking has been approved! Please ensure you have all necessary documents and follow the booking guidelines."
+        
+        booking_details = {
+            'purpose': booking.purpose,
+            'userName': user.full_name,
+            'date': booking.booking_date.isoformat(),
+            'startTime': booking.start_time.strftime('%H:%M'),
+            'endTime': booking.end_time.strftime('%H:%M'),
+            'location': booking.location,
+            'adminComment': admin_comment
+        }
+        
+        send_booking_notification(user.email, email_subject, email_body, is_approved=True, booking_details=booking_details)
+
     return jsonify({
         "message": "Booking approved successfully",
         "booking_id": booking.id,
@@ -281,7 +300,7 @@ def decline_booking(booking_id):
         msg += f" Reason: {admin_comment}"
     note = Notification(
         user_id=booking.user_id,
-        title="Booking Approved",
+        title="Booking Declined",
         message=msg,
         type="declined",          
         booking_id=booking.id
@@ -289,6 +308,24 @@ def decline_booking(booking_id):
     db.session.add(note)
 
     db.session.commit()
+
+    # Send email notification
+    user = User.query.get(booking.user_id)
+    if user and user.email:
+        email_subject = "Booking Declined - Vehicle Booking System"
+        email_body = f"Dear {user.full_name},\n\nUnfortunately, your vehicle booking request has been declined. If you have any questions or need to make another booking request, please contact your administrator."
+        
+        booking_details = {
+            'purpose': booking.purpose,
+            'userName': user.full_name,
+            'date': booking.booking_date.isoformat(),
+            'startTime': booking.start_time.strftime('%H:%M'),
+            'endTime': booking.end_time.strftime('%H:%M'),
+            'location': booking.location,
+            'adminComment': admin_comment
+        }
+        
+        send_booking_notification(user.email, email_subject, email_body, is_approved=False, booking_details=booking_details)
 
     return jsonify({
         "message": "Booking declined successfully",

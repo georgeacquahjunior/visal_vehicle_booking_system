@@ -1,8 +1,6 @@
 
 // Time Window Validation
-
-export const MIN_TIME = "06:00";
-export const MAX_TIME = "18:00";
+import { MIN_TIME, MAX_TIME } from '../config.js';
 
 export function timeWindowValidation(startTime, endTime){
     /**
@@ -23,11 +21,11 @@ export function timeWindowValidation(startTime, endTime){
     }
 
     if (startTime < MIN_TIME || startTime > MAX_TIME){
-        return `Booking duration must be between 06:00 AM and 06:00 PM`;
+        return `Booking must be done between 06:00 AM and 06:00 PM`;
     }
 
     if (endTime < MIN_TIME || endTime > MAX_TIME){
-        return `Booking duration must be between 06:00 AM and 06:00 PM`;
+        return `Booking must be done between 06:00 AM and 06:00 PM`;
     }
 
     return null;

@@ -6,6 +6,12 @@ from ..models.users import User
 auth_bp = Blueprint("auth", __name__, url_prefix="/auth")
 
 
+# Health check endpoint for Render
+@auth_bp.route("/health", methods=["GET"])
+def health_check():
+    return jsonify({"status": "healthy", "service": "vehicle-booking-backend"}), 200
+
+
 # Staff Registration (Admin only)
 @auth_bp.route("/register", methods=["POST"])
 @jwt_required()
@@ -59,7 +65,7 @@ def login():
     if not data:
         return jsonify({"error": "No input data provided"}), 400
 
-    staff_id = data.get("staff_id")
+    staff_id = str(data.get("staff_id", "")).strip()
     password = data.get("password")
 
     if not staff_id or not password:
@@ -75,7 +81,7 @@ def login():
         return jsonify({"error": "Invalid credentials"}), 401
     
     access_token = create_access_token(
-        identity=user.staff_id,
+        identity=str(user.staff_id),
         additional_claims={
             "role": user.role,
             "full_name": user.full_name
@@ -85,6 +91,7 @@ def login():
     return jsonify({
         "message": f"Welcome {user.full_name}!",
         "staff_id": user.staff_id,
+        "full_name": user.full_name,
         "role": user.role,
         "access_token": access_token
     }), 200

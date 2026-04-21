@@ -1,4 +1,6 @@
-const API_BASE = 'https://visal-vehicle-booking-system.onrender.com';
+import { API_BASE_URL } from '../config.js';
+
+const API_BASE = API_BASE_URL;
 
 // get JWT from localStorage
 const getToken = () => localStorage.getItem('access_token');
