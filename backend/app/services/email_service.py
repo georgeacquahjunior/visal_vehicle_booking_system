@@ -37,20 +37,18 @@ def send_booking_notification(user_email, subject, body, is_approved=True, booki
 
 def send_daily_late_booking_summary():
     """
-    Send a daily summary email at 5pm for all bookings starting at or after 5pm today.
+    Send a daily summary email at 5pm for today's and future bookings.
     """
-    from datetime import datetime, time as time_cls
+    from datetime import datetime
     from ..models.bookings import Booking
     from ..models.users import User, Roles
 
     today = datetime.now().date()
-    cutoff_time = time_cls(17, 0)
 
-    late_bookings = (
+    upcoming_bookings = (
         Booking.query
-        .filter(Booking.booking_date == today)
-        .filter(Booking.start_time >= cutoff_time)
-        .order_by(Booking.start_time)
+        .filter(Booking.booking_date >= today)
+        .order_by(Booking.booking_date, Booking.start_time)
         .all()
     )
 
@@ -61,13 +59,13 @@ def send_daily_late_booking_summary():
         current_app.logger.warning("Daily booking summary skipped: no admin email addresses found.")
         return False
 
-    subject = f"Late Booking Summary for {today.isoformat()}"
-    if not late_bookings:
-        body = f"There are no bookings scheduled at or after 5:00 PM for {today.isoformat()}."
+    subject = f"Booking Summary from {today.isoformat()} onward"
+    if not upcoming_bookings:
+        body = f"There are no bookings scheduled for {today.isoformat()} or future dates."
         html_body = _create_summary_email_template(body, [])
     else:
-        body = f"The summary below lists bookings scheduled at or after 5:00 PM for {today.isoformat()}."
-        html_body = _create_summary_email_template(body, late_bookings)
+        body = f"The summary below lists all bookings for {today.isoformat()} and upcoming dates."
+        html_body = _create_summary_email_template(body, upcoming_bookings)
 
     success = True
     for admin_email in admin_emails:
@@ -91,7 +89,7 @@ def send_daily_late_booking_summary():
 
 def _create_summary_email_template(body, bookings, summary_date=None):
     """
-    Create a modern HTML template for the daily late booking summary.
+    Create a modern HTML template for the daily booking summary.
     """
     summary_date = summary_date or "today"
     rows_html = ""
@@ -99,11 +97,13 @@ def _create_summary_email_template(body, bookings, summary_date=None):
     if bookings:
         for booking in bookings:
             requester = booking.user.full_name if getattr(booking, 'user', None) else booking.user_id
+            booking_date = booking.booking_date.strftime("%Y-%m-%d")
             start_time = booking.start_time.strftime("%I:%M %p").lstrip("0")
             end_time = booking.end_time.strftime("%I:%M %p").lstrip("0")
             rows_html += f"""
                 <tr>
                     <td style="padding: 12px 10px; border-bottom: 1px solid #e5e7eb;">{requester}</td>
+                    <td style="padding: 12px 10px; border-bottom: 1px solid #e5e7eb;">{booking_date}</td>
                     <td style="padding: 12px 10px; border-bottom: 1px solid #e5e7eb;">{booking.purpose}</td>
                     <td style="padding: 12px 10px; border-bottom: 1px solid #e5e7eb;">{booking.location}</td>
                     <td style="padding: 12px 10px; border-bottom: 1px solid #e5e7eb;">{start_time} - {end_time}</td>
@@ -111,7 +111,7 @@ def _create_summary_email_template(body, bookings, summary_date=None):
                 </tr>
             """
     else:
-        rows_html = "<tr><td colspan=5 style=\"padding: 16px 10px; text-align:center; color:#6b7280;\">No late bookings found for today.</td></tr>"
+        rows_html = "<tr><td colspan=6 style=\"padding: 16px 10px; text-align:center; color:#6b7280;\">No bookings found for today or future dates.</td></tr>"
 
     html = f"""
     <!DOCTYPE html>
@@ -119,7 +119,7 @@ def _create_summary_email_template(body, bookings, summary_date=None):
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Daily Late Booking Summary</title>
+        <title>Daily Booking Summary</title>
         <style>
             body {{
                 margin: 0;
@@ -197,7 +197,7 @@ def _create_summary_email_template(body, bookings, summary_date=None):
     <body>
         <div class="container">
             <div class="hero">
-                <h1>Daily Late Booking Summary</h1>
+                <h1>Daily Booking Summary</h1>
                 <p>{body}</p>
             </div>
             <div class="content">
@@ -205,6 +205,7 @@ def _create_summary_email_template(body, bookings, summary_date=None):
                     <thead>
                         <tr>
                             <th>Requester</th>
+                            <th>Date</th>
                             <th>Purpose</th>
                             <th>Location</th>
                             <th>Time</th>
