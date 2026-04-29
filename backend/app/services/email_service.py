@@ -1,20 +1,12 @@
 from flask_mail import Message
 from flask import current_app
 from ..extensions import mail
+from datetime import datetime
+from ..models.bookings import Booking
+from ..models.users import User, Roles
 
 
 def send_booking_notification(user_email, subject, body, is_approved=True, booking_details=None):
-    """
-    Send an email notification for booking approval/decline with professional HTML design.
-
-    Args:
-        user_email (str): Recipient's email address
-        subject (str): Email subject
-        body (str): Email body content (plain text fallback)
-        is_approved (bool): Whether booking was approved (True) or declined (False)
-        booking_details (dict): Optional booking details dict with keys:
-            - purpose, userName, date, startTime, endTime, location, adminComment
-    """
     try:
         # Create professional HTML email template
         html_body = _create_email_template(
@@ -35,14 +27,11 @@ def send_booking_notification(user_email, subject, body, is_approved=True, booki
         return False
 
 
-def send_daily_late_booking_summary():
+def send_daily_booking_summary():
     """
     Send a daily summary email at 5pm for today's and future bookings.
     """
-    from datetime import datetime
-    from ..models.bookings import Booking
-    from ..models.users import User, Roles
-
+    
     today = datetime.now().date()
 
     upcoming_bookings = (
@@ -59,12 +48,12 @@ def send_daily_late_booking_summary():
         current_app.logger.warning("Daily booking summary skipped: no admin email addresses found.")
         return False
 
-    subject = f"Booking Summary from {today.isoformat()} onward"
+    subject = f"Booking Summary for {today.strftime('%B %d')} and future bookings"
     if not upcoming_bookings:
-        body = f"There are no bookings scheduled for {today.isoformat()} or future dates."
+        body = f"There are no bookings scheduled for {today.strftime('%B %d')} or future dates."
         html_body = _create_summary_email_template(body, [])
     else:
-        body = f"The summary below lists all bookings for {today.isoformat()} and upcoming dates."
+        body = f"The summary below lists all bookings for {today.strftime('%B %d')} and upcoming dates."
         html_body = _create_summary_email_template(body, upcoming_bookings)
 
     success = True
@@ -97,7 +86,7 @@ def _create_summary_email_template(body, bookings, summary_date=None):
     if bookings:
         for booking in bookings:
             requester = booking.user.full_name if getattr(booking, 'user', None) else booking.user_id
-            booking_date = booking.booking_date.strftime("%Y-%m-%d")
+            booking_date = booking.booking_date.strftime("%B %d")
             start_time = booking.start_time.strftime("%I:%M %p").lstrip("0")
             end_time = booking.end_time.strftime("%I:%M %p").lstrip("0")
             rows_html += f"""
