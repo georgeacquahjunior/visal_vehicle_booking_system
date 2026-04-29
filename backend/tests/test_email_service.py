@@ -2,7 +2,7 @@ import logging
 from datetime import date, time
 import pytest
 from unittest.mock import patch
-from app.services.email_service import send_booking_notification, send_daily_late_booking_summary
+from app.services.email_service import send_booking_notification, send_daily_booking_summary
 from app.models.bookings import Booking
 
 
@@ -83,7 +83,7 @@ class TestEmailService:
             assert "SMTP Error" in caplog.text
 
     @patch('app.services.email_service.mail')
-    def test_send_daily_late_booking_summary(self, mock_mail, app, test_admin):
+    def test_send_daily_booking_summary(self, mock_mail, app, test_admin):
         """Test the daily late booking summary sends email to admins."""
         with app.app_context():
             mock_mail.send.return_value = None
@@ -101,7 +101,7 @@ class TestEmailService:
             db.session.add(booking)
             db.session.commit()
 
-            result = send_daily_late_booking_summary()
+            result = send_daily_booking_summary()
 
             assert result is True
             assert mock_mail.send.call_count == 1

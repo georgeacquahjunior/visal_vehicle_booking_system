@@ -88,7 +88,7 @@ File: `app/models/changelog.py`
 ### Email Service
 File: `app/services/email_service.py`
 - `send_booking_notification(user_email, subject, body, is_approved=True, booking_details=None)`: Sends professional HTML email for booking approval/decline notifications.
-- `send_daily_late_booking_summary()`: Generates and sends daily summary email at 5pm for bookings starting at or after 5pm.
+- `send_daily_booking_summary()`: Generates and sends daily summary email at 5pm for bookings starting at or after 5pm.
 
 ### Summary Scheduler
 File: `app/services/summary_scheduler.py`

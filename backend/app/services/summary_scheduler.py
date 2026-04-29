@@ -3,7 +3,7 @@ import time
 from datetime import datetime, timedelta, time as time_cls
 from flask import current_app
 
-from .email_service import send_daily_late_booking_summary
+from .email_service import send_daily_booking_summary
 
 
 def _seconds_until_next_run(app):
@@ -29,7 +29,7 @@ def _scheduler_loop(app):
 
             try:
                 current_app.logger.info("Running daily booking summary task...")
-                send_daily_late_booking_summary()
+                send_daily_booking_summary()
                 current_app.logger.info("Daily booking summary task completed")
             except Exception as exc:
                 current_app.logger.error(f"Daily booking summary task failed: {exc}")
