@@ -1,5 +1,4 @@
-import "./Dashboard.css";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import {
   AlertCircle,
   CalendarClock,
@@ -8,444 +7,365 @@ import {
   ShieldCheck,
   UsersRound,
 } from "lucide-react";
+import {
+  Bar,
+  BarChart,
+  CartesianGrid,
+  Cell,
+  Pie,
+  PieChart,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from "recharts";
 import { API_BASE_URL } from "../../../config.js";
 
+const STATUS_COLORS = {
+  approved: "#1f8f63",
+  pending: "#c88810",
+  declined: "#cc4a43",
+};
+
 function Dashboard() {
-  const [pending, setPending] = useState([]);
+  const [requests, setRequests] = useState([]);
+  const [staff, setStaff] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-  const [processingId, setProcessingId] = useState(null);
-  const [visibleCount, setVisibleCount] = useState(3);
-  const [staff, setStaff] = useState([]);
-  const [staffLoading, setStaffLoading] = useState(false);
   const [staffError, setStaffError] = useState(null);
 
-  const API_BASE = API_BASE_URL;
-
   useEffect(() => {
-    const fetchPending = async () => {
+    const fetchBookings = async () => {
       setLoading(true);
       setError(null);
+
       try {
-        const res = await fetch(`${API_BASE}/bookings/pending`);
+        const res = await fetch(`${API_BASE_URL}/bookings/schedule_view`);
         if (!res.ok) throw new Error(`Server responded ${res.status}`);
+
         const data = await res.json();
-        const remote = Array.isArray(data.pending_bookings) ? data.pending_bookings : [];
-        const mapped = remote.map((b) => ({
-          id: b.booking_id,
-          userName: b.staff_name || b.staff || "Staff",
-          bookingDate: b.booking_date,
-          startTime: b.start_time,
-          endTime: b.end_time,
-          status: b.status ? b.status.toString().trim().toLowerCase() : "pending",
+        const remote = Array.isArray(data.bookings) ? data.bookings : [];
+        const mapped = remote.map((booking) => ({
+          id: booking.booking_id,
+          userName: booking.staff_name || "Staff",
+          department: booking.department || "Unassigned",
+          bookingDate: booking.booking_date,
+          startTime: booking.start_time,
+          endTime: booking.end_time,
+          location: booking.location || "Not specified",
+          purpose: booking.purpose || "Not specified",
+          status: booking.status ? booking.status.toString().trim().toLowerCase() : "pending",
         }));
-        const sorted = mapped.sort((a, b) => {
-          const ad = a.bookingDate ? new Date(a.bookingDate).getTime() : 0;
-          const bd = b.bookingDate ? new Date(b.bookingDate).getTime() : 0;
-          if (bd !== ad) return bd - ad;
-          return (b.startTime || "").localeCompare(a.startTime || "");
-        });
-        setPending(sorted);
+
+        setRequests(
+          mapped.sort((a, b) => {
+            const ad = a.bookingDate ? new Date(a.bookingDate).getTime() : 0;
+            const bd = b.bookingDate ? new Date(b.bookingDate).getTime() : 0;
+            if (bd !== ad) return bd - ad;
+            return (b.startTime || "").localeCompare(a.startTime || "");
+          })
+        );
       } catch (err) {
-        setError(err.message || "Failed to load pending bookings");
+        setError(err.message || "Failed to load booking requests");
       } finally {
         setLoading(false);
       }
     };
 
-    fetchPending();
+    fetchBookings();
   }, []);
 
   useEffect(() => {
     const fetchStaff = async () => {
-      setStaffLoading(true);
       setStaffError(null);
-
       const token = localStorage.getItem("access_token");
 
       try {
-        const res = await fetch(`${API_BASE}/auth/users`, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
+        const res = await fetch(`${API_BASE_URL}/auth/users`, {
+          headers: { Authorization: `Bearer ${token}` },
         });
 
         if (!res.ok) throw new Error(`Server responded ${res.status}`);
 
         const data = await res.json();
         const users = Array.isArray(data.users) ? data.users : data;
-
-        const mapped = users.map((u) => ({
-          id: u.staff_id,
-          name: u.full_name,
-          email: u.email,
-          role: u.role || "staff",
-          status: "active",
-        }));
-
-        setStaff(mapped);
+        setStaff(
+          users.map((user) => ({
+            id: user.staff_id,
+            name: user.full_name,
+            role: user.role || "staff",
+            status: (user.status || "active").toString().trim().toLowerCase(),
+          }))
+        );
       } catch (err) {
         setStaffError(err.message || "Failed to load staff");
-      } finally {
-        setStaffLoading(false);
       }
     };
 
     fetchStaff();
   }, []);
 
-  const isPastBooking = (bookingDateStr) => {
-    if (!bookingDateStr) return false;
-    const d = new Date(bookingDateStr);
-    const bookingDate = new Date(d.getFullYear(), d.getMonth(), d.getDate());
-    const today = new Date();
-    const currentDate = new Date(today.getFullYear(), today.getMonth(), today.getDate());
-    return bookingDate.getTime() < currentDate.getTime();
-  };
+  const stats = useMemo(() => {
+    const pending = requests.filter((request) => request.status === "pending").length;
+    const approved = requests.filter((request) => request.status === "approved").length;
+    const declined = requests.filter((request) => request.status === "declined").length;
+    const admins = staff.filter((member) => member.role === "admin").length;
+    const activeStaff = staff.filter((member) => member.status === "active").length;
+    const totalHours = requests.reduce((sum, request) => sum + durationHours(request.startTime, request.endTime), 0);
 
-  const formatDate = (dateString) => {
-    if (!dateString) return "TBD";
-    return new Date(dateString).toLocaleDateString("en-US", {
-      month: "short",
-      day: "numeric",
-      year: "numeric",
-    });
-  };
+    return { activeStaff, admins, approved, declined, pending, totalHours };
+  }, [requests, staff]);
 
-  const statusLabel = (status) => {
-    if (!status) return "Unknown";
-    return status.charAt(0).toUpperCase() + status.slice(1);
-  };
+  const recentRequests = requests.slice(0, 4);
+  const nextRequest = requests.find((request) => request.status === "pending") || requests[0] || null;
 
-  const nameInitials = (value) => {
-    if (!value) return "U";
-    const parts = value.trim().split(/\s+/).filter(Boolean);
-    if (parts.length === 1) return parts[0].slice(0, 1).toUpperCase();
-    return `${parts[0][0]}${parts[1][0]}`.toUpperCase();
-  };
+  const statusChartData = useMemo(
+    () =>
+      ["pending", "approved", "declined"].map((status) => ({
+        name: statusLabel(status),
+        status,
+        value: requests.filter((request) => request.status === status).length,
+      })),
+    [requests]
+  );
 
-  const handleApprove = (booking) => {
-    setSelectedBooking(booking);
-    setApproveDialogOpen(true);
-  };
-
-  const handleDecline = (booking) => {
-    setSelectedBooking(booking);
-    setDeclineDialogOpen(true);
-  };
-
-  const confirmApprove = async () => {
-    if (!selectedBooking) return;
-    setProcessingId(selectedBooking.id);
-    try {
-      const res = await fetch(`${API_BASE}/bookings/${id}/approve`, {
-        method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({ admin_comment: "" }),
-      });
-
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || data.message || `Server responded ${res.status}`);
-
-      setPending((current) => current.map((item) => (item.id === id ? { ...item, status: "approved" } : item)));
-    } catch (err) {
-      console.error(err);
-      setError(err.message || "Failed to approve");
-    } finally {
-      setProcessingId(null);
-      setApproveDialogOpen(false);
-      setSelectedBooking(null);
-    }
-  };
-
-  const confirmDecline = async () => {
-    if (!selectedBooking) return;
-    const reason = declineReason === 'Other' ? otherDeclineReason : declineReason;
-    setProcessingId(selectedBooking.id);
-    try {
-      const res = await fetch(`${API_BASE}/bookings/${id}/decline`, {
-        method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          admin_comment: "Declined from dashboard",
-        }),
-      });
-
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || data.message || `Server responded ${res.status}`);
-
-      setPending((current) => current.map((item) => (item.id === id ? { ...item, status: "declined" } : item)));
-    } catch (err) {
-      console.error(err);
-      setError(err.message || "Failed to decline");
-    } finally {
-      setProcessingId(null);
-      setDeclineDialogOpen(false);
-      setSelectedBooking(null);
-      setDeclineReason('');
-      setOtherDeclineReason('');
-    }
-  };
-
-  const visibleRequests = pending.slice(0, visibleCount);
-  const hasMoreRequests = visibleCount < pending.length;
-  const totalPending = pending.filter((item) => item.status === "pending").length;
-  const approvedQueue = pending.filter((item) => item.status === "approved").length;
-  const activeStaff = staff.filter((member) => member.status === "active").length;
-  const admins = staff.filter((member) => member.role === "admin").length;
-  const nextRequest = pending.find((item) => item.status === "pending") || pending[0] || null;
+  const departmentChartData = useMemo(() => groupByCount(requests, "department").slice(0, 6), [requests]);
 
   return (
-    <div className="admin-dashboard">
-      <section className="dashboard-hero">
-        <div className="dashboard-hero-copy">
-          <div className="dashboard-kicker">Administration overview</div>
-          <h1 className="dashboard-title">Operational control for vehicle bookings</h1>
-          <p className="dashboard-subtitle">
-            Review incoming requests, monitor staff activity, and keep vehicle scheduling decisions moving with a
-            clearer admin workspace.
+    <div className="text-[#11233f]">
+      <section className="grid gap-5 rounded-[28px] border border-[rgba(15,23,42,0.08)] bg-white bg-[radial-gradient(circle_at_top_right,rgba(80,133,214,0.22),transparent_28%),radial-gradient(circle_at_left_center,rgba(17,74,157,0.18),transparent_32%)] p-7 lg:grid-cols-[minmax(0,1.8fr)_minmax(280px,0.95fr)]">
+        <div>
+          <div className="text-xs font-bold uppercase tracking-[0.14em] text-[#6b7f9e]">Administration overview</div>
+          <h1 className="my-2.5 max-w-[300px] text-3xl font-bold leading-tight text-[#11233f]">
+            Operational control for vehicle bookings
+          </h1>
+          <p className="m-0 max-w-[65ch] text-[15px] leading-7 text-[#53657f]">
+            Review incoming requests, monitor staff activity, and keep scheduling decisions moving with clear visual signals.
           </p>
         </div>
 
-        <div className="dashboard-hero-highlight">
-          <div className="hero-highlight-header">
-            <span className="hero-highlight-label">Next item in queue</span>
+        <div className="flex min-h-[180px] flex-col justify-between gap-3 rounded-3xl bg-gradient-to-br from-[#113f82] to-[#1d62bf] p-[22px] text-white">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-bold uppercase tracking-[0.14em] text-white/70">Next item in queue</span>
             <Clock3 size={18} />
           </div>
           {nextRequest ? (
             <>
-              <strong>{nextRequest.userName}</strong>
-              <p>{formatDate(nextRequest.bookingDate)}</p>
-              <span>
-                {nextRequest.startTime} - {nextRequest.endTime}
-              </span>
+              <strong className="text-2xl font-bold">{nextRequest.userName}</strong>
+              <p className="m-0 text-white/85">{formatDate(nextRequest.bookingDate)}</p>
+              <span className="text-white/85">{nextRequest.startTime} - {nextRequest.endTime}</span>
             </>
           ) : (
             <>
-              <strong>All clear</strong>
-              <p>No requests waiting for review right now.</p>
-              <span>Queue is up to date</span>
+              <strong className="text-2xl font-bold">All clear</strong>
+              <p className="m-0 text-white/85">No requests waiting for review right now.</p>
+              <span className="text-white/85">Queue is up to date</span>
             </>
           )}
         </div>
       </section>
 
-      <section className="dashboard-stats-grid">
-        <article className="dashboard-metric-card dashboard-metric-card-staff">
-          <div className="metric-icon">
-            <UsersRound size={22} />
-          </div>
-          <div>
-            <p className="metric-label">Active staff</p>
-            <h3>{activeStaff}</h3>
-            <span>{admins} admin account{admins === 1 ? "" : "s"} with elevated access</span>
-          </div>
-        </article>
-
-        <article className="dashboard-metric-card dashboard-metric-card-pending">
-          <div className="metric-icon">
-            <AlertCircle size={22} />
-          </div>
-          <div>
-            <p className="metric-label">Pending requests</p>
-            <h3>{totalPending}</h3>
-            <span>{visibleRequests.length} recent requests currently visible on this page</span>
-          </div>
-        </article>
-
-        <article className="dashboard-metric-card dashboard-metric-card-approved">
-          <div className="metric-icon">
-            <CheckCircle2 size={22} />
-          </div>
-          <div>
-            <p className="metric-label">Reviewed in queue</p>
-            <h3>{approvedQueue}</h3>
-            <span>Items already acted on during this session view</span>
-          </div>
-        </article>
-
-        <article className="dashboard-metric-card dashboard-metric-card-security">
-          <div className="metric-icon">
-            <ShieldCheck size={22} />
-          </div>
-          <div>
-            <p className="metric-label">System posture</p>
-            <h3>{staffError || error ? "Check" : "Stable"}</h3>
-            <span>{staffError || error ? "One or more data panels need attention" : "Core dashboard feeds are responding"}</span>
-          </div>
-        </article>
+      <section className="mt-[22px] grid grid-cols-1 gap-[18px] sm:grid-cols-2 xl:grid-cols-4">
+        <MetricCard icon={UsersRound} label="Active staff" value={stats.activeStaff} detail={`${stats.admins} admin account${stats.admins === 1 ? "" : "s"} with elevated access`} tone="blue" />
+        <MetricCard icon={AlertCircle} label="Pending requests" value={stats.pending} detail="Awaiting admin decision" tone="amber" />
+        <MetricCard icon={CheckCircle2} label="Approved requests" value={stats.approved} detail={`${stats.declined} declined request${stats.declined === 1 ? "" : "s"} in the full queue`} tone="green" />
+        <MetricCard icon={ShieldCheck} label="System posture" value={staffError || error ? "Check" : "Stable"} detail={staffError || error ? "One or more feeds need attention" : "Core dashboard feeds are responding"} tone="indigo" />
       </section>
 
-      <section className="dashboard-main-grid">
-        <div className="dashboard-panel booking-queue-panel">
-          <div className="panel-header">
+      <section className="mt-[22px] grid gap-[22px] xl:grid-cols-[minmax(0,1.45fr)_minmax(360px,0.85fr)]">
+        <article className="rounded-[28px] border border-[rgba(15,23,42,0.08)] bg-white p-6">
+          <div className="mb-[18px] flex flex-col justify-between gap-4 md:flex-row md:items-start">
             <div>
-              <p className="panel-eyebrow">Review queue</p>
-              <h2>Recent booking requests</h2>
+              <p className="text-xs font-bold uppercase tracking-[0.14em] text-[#6b7f9e]">Review queue</p>
+              <h2 className="mt-1.5 text-[1.4rem] font-bold text-[#11233f]">Recent booking requests</h2>
             </div>
-            <div className="panel-pill">
+            <div className="inline-flex w-fit items-center gap-2 rounded-full bg-[#edf4ff] px-3 py-2.5 text-[13px] font-bold text-[#114a9d]">
               <CalendarClock size={16} />
-              <span>{totalPending} awaiting action</span>
+              <span>{stats.pending} awaiting action</span>
             </div>
           </div>
 
           {loading ? (
-            <div className="panel-state">Loading booking requests...</div>
+            <PanelState>Loading booking requests...</PanelState>
           ) : error ? (
-            <div className="panel-state panel-state-error">{error}</div>
-          ) : visibleRequests.length === 0 ? (
-            <div className="panel-state">No booking requests available.</div>
+            <PanelState error>{error}</PanelState>
+          ) : recentRequests.length === 0 ? (
+            <PanelState>No booking requests available.</PanelState>
           ) : (
-            <>
-              <div className="request-list">
-                {visibleRequests.map((request) => {
-                  const disabled = processingId === request.id || isPastBooking(request.bookingDate);
-                  const isPending = request.status === "pending";
-                  return (
-                  <article className="request-card" key={request.id}>
-                    <div className="request-card-top">
-                      <div className="request-person">
-                        <div className="request-avatar">{nameInitials(request.userName)}</div>
-                        <div>
-                          <h3>{request.userName}</h3>
-                          <p>{formatDate(request.bookingDate)}</p>
-                        </div>
+            <div className="grid gap-4">
+              {recentRequests.map((request) => (
+                <article key={request.id} className="rounded-[22px] border border-[rgba(15,23,42,0.08)] bg-gradient-to-b from-white to-[#fbfcfe] p-[18px]">
+                  <div className="flex flex-col justify-between gap-4 md:flex-row md:items-center">
+                    <div className="flex items-center gap-3.5">
+                      <div className="flex h-[46px] w-[46px] shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-[#1d62bf] to-[#113f82] font-bold text-white">
+                        {nameInitials(request.userName)}
                       </div>
-                      <span className={`status-badge status-${request.status}`}>{statusLabel(request.status)}</span>
+                      <div>
+                        <h3 className="m-0 text-base font-bold text-[#11233f]">{request.userName}</h3>
+                        <p className="mt-1 text-[13px] text-[#7b8ba5]">{formatDate(request.bookingDate)}</p>
+                      </div>
                     </div>
+                    <span className={`inline-flex w-fit rounded-full px-3 py-1.5 text-xs font-bold capitalize ${statusBadgeClass(request.status)}`}>
+                      {statusLabel(request.status)}
+                    </span>
+                  </div>
 
-                    <div className="request-meta">
-                      <span>{request.startTime} - {request.endTime}</span>
-                      {isPastBooking(request.bookingDate) && <span className="request-flag">Past date</span>}
-                    </div>
-
-                    <div className="request-actions">
-                      {isPending ? (
-                        <>
-                          <button className="dashboard-approve-btn" onClick={() => approveBooking(request.id)} disabled={disabled}>
-                            {processingId === request.id ? "Processing..." : "Approve"}
-                          </button>
-                          <button className="decline-btn" onClick={() => declineBooking(request.id)} disabled={disabled}>
-                            Decline
-                          </button>
-                        </>
-                      ) : (
-                        <div className="request-complete">Decision recorded</div>
-                      )}
-                    </div>
-                  </article>
-                );
-              })}
+                  <div className="mt-4 flex flex-wrap items-center justify-between gap-3 text-sm text-[#53657f]">
+                    <span>{request.startTime} - {request.endTime}</span>
+                    <span>{request.location}</span>
+                  </div>
+                </article>
+              ))}
             </div>
-            {hasMoreRequests && (
-              <div className="request-loadmore">
-                <button className="load-more-btn" onClick={() => setVisibleCount((count) => Math.min(count + 3, pending.length))}>
-                  Load more requests
-                </button>
-              </div>
-            )}
-          </>
           )}
-        </div>
+        </article>
 
-        <aside className="dashboard-panel insights-panel">
-          <div className="panel-header">
-            <div>
-              <p className="panel-eyebrow">Quick insight</p>
-              <h2>Admin snapshot</h2>
-            </div>
+        <article className="rounded-[28px] border border-[rgba(15,23,42,0.08)] bg-white p-6">
+          <div className="mb-5">
+            <p className="text-xs font-bold uppercase tracking-[0.14em] text-[#6b7f9e]">Decision mix</p>
+            <h2 className="mt-1.5 text-[1.4rem] font-bold text-[#11233f]">Approval status</h2>
           </div>
-
-          <div className="insight-stack">
-            <div className="insight-card">
-              <span className="insight-label">Queue health</span>
-              <strong>{totalPending === 0 ? "Balanced" : "Needs review"}</strong>
-              <p>
-                {totalPending === 0
-                  ? "No pending approvals are waiting right now."
-                  : `${totalPending} request${totalPending === 1 ? "" : "s"} still need an admin decision.`}
-              </p>
-            </div>
-
-            <div className="insight-card">
-              <span className="insight-label">Coverage</span>
-              <strong>{staff.length} team members loaded</strong>
-              <p>Use the staff register and approvals workflow to keep records current and scheduling responsive.</p>
-            </div>
-
-            <div className="insight-card">
-              <span className="insight-label">Visibility</span>
-              <strong>Professional control center</strong>
-              <p>The dashboard now prioritizes decisions, staffing visibility, and high-signal status cues.</p>
-            </div>
-          </div>
-        </aside>
+          <ResponsiveContainer width="100%" height={300}>
+            <PieChart>
+              <Pie data={statusChartData} dataKey="value" nameKey="name" innerRadius={64} outerRadius={98} paddingAngle={4}>
+                {statusChartData.map((entry) => (
+                  <Cell key={entry.status} fill={STATUS_COLORS[entry.status]} />
+                ))}
+              </Pie>
+              <Tooltip />
+            </PieChart>
+          </ResponsiveContainer>
+        </article>
       </section>
 
-      <section className="dashboard-panel staff-panel">
-        <div className="panel-header">
-          <div>
-            <p className="panel-eyebrow">Directory</p>
-            <h2>Staff members</h2>
-          </div>
-          <div className="panel-pill panel-pill-muted">
-            <span>{staff.length} total account{staff.length === 1 ? "" : "s"}</span>
-          </div>
-        </div>
+      <section className="mt-[22px] grid gap-[22px] xl:grid-cols-2">
+        <ChartPanel title="Bookings by department" subtitle="Shows where vehicle demand is coming from.">
+          <ResponsiveContainer width="100%" height={300}>
+            <BarChart data={departmentChartData}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+              <XAxis dataKey="name" tick={{ fontSize: 12 }} />
+              <YAxis allowDecimals={false} tick={{ fontSize: 12 }} />
+              <Tooltip />
+              <Bar dataKey="count" fill="#1768db" radius={[8, 8, 0, 0]} />
+            </BarChart>
+          </ResponsiveContainer>
+        </ChartPanel>
 
-        {staffLoading ? (
-          <div className="panel-state">Loading staff members...</div>
-        ) : staffError ? (
-          <div className="panel-state panel-state-error">{staffError}</div>
-        ) : staff.length === 0 ? (
-          <div className="panel-state">No staff found.</div>
-        ) : (
-          <div className="table-shell">
-            <table className="staff-table">
-              <thead>
-                <tr>
-                  <th>Staff</th>
-                  <th>Staff ID</th>
-                  <th>Email</th>
-                  <th>Role</th>
-                  <th>Status</th>
-                </tr>
-              </thead>
-
-              <tbody>
-                {staff.map((member) => (
-                  <tr key={member.id}>
-                    <td>
-                      <div className="staff-cell">
-                        <div className="staff-avatar">{nameInitials(member.name)}</div>
-                        <div>
-                          <strong>{member.name}</strong>
-                        </div>
-                      </div>
-                    </td>
-                    <td>{member.id}</td>
-                    <td>{member.email}</td>
-                    <td>
-                      <span className="role-badge">{member.role}</span>
-                    </td>
-                    <td>
-                      <span className={`status-badge status-${member.status}`}>{statusLabel(member.status)}</span>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+        <ChartPanel title="Queue workload" subtitle="Compares request count and booked hours for planning.">
+          <div className="grid gap-4 sm:grid-cols-2">
+            <MiniStat label="Total booking hours" value={stats.totalHours.toFixed(1)} />
+            <MiniStat label="Average duration" value={requests.length ? `${(stats.totalHours / requests.length).toFixed(1)}h` : "0h"} />
+            <MiniStat label="Pending share" value={requests.length ? `${Math.round((stats.pending / requests.length) * 100)}%` : "0%"} />
+            <MiniStat label="Staff coverage" value={staff.length} />
           </div>
-        )}
+        </ChartPanel>
       </section>
     </div>
   );
+}
+
+function MetricCard({ detail, icon: Icon, label, tone, value }) {
+  const tones = {
+    amber: "bg-[rgba(200,136,16,0.12)] text-[#c88810]",
+    blue: "bg-[rgba(22,119,255,0.12)] text-[#1768db]",
+    green: "bg-[rgba(31,143,99,0.12)] text-[#1f8f63]",
+    indigo: "bg-[rgba(91,99,216,0.12)] text-[#4c56d7]",
+  };
+
+  return (
+    <article className="relative flex gap-4 overflow-hidden rounded-3xl border border-[rgba(15,23,42,0.08)] bg-white p-[22px]">
+      <div className={`flex h-[50px] w-[50px] shrink-0 items-center justify-center rounded-2xl ${tones[tone]}`}>
+        <Icon size={22} />
+      </div>
+      <div className="min-w-0">
+        <p className="text-xs font-bold uppercase tracking-[0.14em] text-[#6b7f9e]">{label}</p>
+        <h3 className="my-1.5 truncate text-3xl font-bold leading-none text-[#11233f]">{value}</h3>
+        <span className="text-[13px] leading-5 text-[#53657f]">{detail}</span>
+      </div>
+    </article>
+  );
+}
+
+function ChartPanel({ children, subtitle, title }) {
+  return (
+    <article className="rounded-[28px] border border-[rgba(15,23,42,0.08)] bg-white p-6">
+      <div className="mb-5">
+        <h2 className="text-[1.4rem] font-bold text-[#11233f]">{title}</h2>
+        <p className="mt-1 text-sm text-[#7b8ba5]">{subtitle}</p>
+      </div>
+      {children}
+    </article>
+  );
+}
+
+function MiniStat({ label, value }) {
+  return (
+    <div className="rounded-[22px] border border-[rgba(17,74,157,0.08)] bg-gradient-to-b from-[#f9fbff] to-[#f2f6fb] p-[18px]">
+      <span className="text-xs font-bold uppercase tracking-[0.14em] text-[#6d7d96]">{label}</span>
+      <strong className="mt-2 block text-2xl text-[#11233f]">{value}</strong>
+    </div>
+  );
+}
+
+function PanelState({ children, error = false }) {
+  return (
+    <div className={`flex min-h-[220px] items-center justify-center rounded-[22px] p-5 text-center ${error ? "bg-[#fff4f2] text-[#cc4a43]" : "bg-gradient-to-b from-[#f7f9fc] to-[#eef4fb] text-[#53657f]"}`}>
+      {children}
+    </div>
+  );
+}
+
+function durationHours(start, end) {
+  const startMinutes = timeToMinutes(start);
+  const endMinutes = timeToMinutes(end);
+  if (startMinutes === null || endMinutes === null || endMinutes <= startMinutes) return 0;
+  return (endMinutes - startMinutes) / 60;
+}
+
+function timeToMinutes(value) {
+  if (!value) return null;
+  const [hour, minute] = value.split(":").map(Number);
+  if (Number.isNaN(hour) || Number.isNaN(minute)) return null;
+  return hour * 60 + minute;
+}
+
+function groupByCount(items, key) {
+  const grouped = items.reduce((acc, item) => {
+    const name = item[key] || "Unassigned";
+    acc[name] = (acc[name] || 0) + 1;
+    return acc;
+  }, {});
+
+  return Object.entries(grouped)
+    .map(([name, count]) => ({ name, count }))
+    .sort((a, b) => b.count - a.count);
+}
+
+function formatDate(dateString) {
+  if (!dateString) return "TBD";
+  return new Date(dateString).toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  });
+}
+
+function nameInitials(value) {
+  if (!value) return "U";
+  const parts = value.trim().split(/\s+/).filter(Boolean);
+  if (parts.length === 1) return parts[0].slice(0, 1).toUpperCase();
+  return `${parts[0][0]}${parts[1][0]}`.toUpperCase();
+}
+
+function statusLabel(status) {
+  if (!status) return "Unknown";
+  return status.charAt(0).toUpperCase() + status.slice(1);
+}
+
+function statusBadgeClass(status) {
+  if (status === "approved") return "bg-[#eaf8f1] text-[#1c8b60]";
+  if (status === "declined") return "bg-[#fff0ef] text-[#cc4a43]";
+  return "bg-[#fff6e7] text-[#b67808]";
 }
 
 export default Dashboard;

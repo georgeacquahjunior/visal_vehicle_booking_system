@@ -17,6 +17,9 @@ function Navbar({ collapsed, userName, userRole }) {
     return colors[code % colors.length];
   };
 
+  const displayName = userName || "Guest User";
+  const displayRole = userRole || "Visitor";
+
   return (
     <aside className={`sidebar ${collapsed ? "collapsed" : ""}`}>
       <div className="sidebar-brand">
@@ -45,14 +48,19 @@ function Navbar({ collapsed, userName, userRole }) {
       </nav>
 
       <div className="sidebar-footer">
-        <div className="footer-user">
-          <div className="avatar" style={{ backgroundColor: colorForName(userName) }}>
-            {letterFor(userName) || "G"}
+        <div className="footer-user profile-card">
+          <div className="avatar-ring">
+            <div className="avatar" style={{ backgroundColor: colorForName(displayName) }}>
+              {letterFor(displayName) || "G"}
+            </div>
           </div>
           {!collapsed && (
             <div className="user-info">
-              <div className="user-name">{userName || "Guest User"}</div>
-              <div className="user-role">{userRole || "Visitor"}</div>
+              <div className="user-name">{displayName}</div>
+              <div className="user-role">
+                <span className="role-dot" />
+                {displayRole}
+              </div>
             </div>
           )}
         </div>

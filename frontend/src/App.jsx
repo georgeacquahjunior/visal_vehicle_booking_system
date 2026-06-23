@@ -7,10 +7,11 @@ import RootLayout from './components/layout/RootLayout'
 import ViewBookings from './pages/viewbookings/ViewBookings'
 import AdminRootLayout from './components/layout/AdminRootLayout'
 import Dashboard from './pages/admin/dashboard/Dashboard'
-import Approvals from './pages/admin/approvals/Approvals'
-import Reports from './pages/admin/reports/Reports'
+import Approvals from './pages/admin/Approvals'
+import Reports from './pages/admin/Reports'
 import ProtectedRoute from './pages/login/ProtectedRoutes'
 import RegisterStaff from './pages/admin/registerStaff/RegisterStaff'
+import StaffMembers from './pages/admin/StaffMembers'
 import Changelog from './pages/Changelog'
 
 function App() {
@@ -27,6 +28,7 @@ function App() {
           <Route index element={<Dashboard />} />
           <Route path="approvals" element={<Approvals />} />
           <Route path="register-staff" element={<RegisterStaff />} />
+          <Route path="staff-members" element={<StaffMembers />} />
           <Route path="reports" element={<Reports />} />
         </Route>
         <Route path="/changelog" element={<Changelog />} />

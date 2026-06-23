@@ -2,7 +2,7 @@ import "./AdminNavbar.css";
 import logo from "../../../assets/visal_logo.webp";
 import React from "react";
 import { NavLink } from "react-router-dom";
-import { ClipboardCheck, FileText, LayoutDashboard, UserPlus } from "lucide-react";
+import { ClipboardCheck, FileText, LayoutDashboard, UserPlus, UsersRound } from "lucide-react";
 
 function AdminNavbar({ collapsed, userName, userRole }) {
   const letterFor = (name) => {
@@ -16,6 +16,9 @@ function AdminNavbar({ collapsed, userName, userRole }) {
     const colors = ["#6c7ae0", "#f59e0b", "#10b981", "#ef4444", "#6366f1", "#0ea5e9"];
     return colors[code % colors.length];
   };
+
+  const displayName = userName || "Admin User";
+  const displayRole = userRole || "Administrator";
 
   return (
     <aside className={`sidebar ${collapsed ? "collapsed" : ""}`}>
@@ -42,6 +45,10 @@ function AdminNavbar({ collapsed, userName, userRole }) {
           <UserPlus size={18} />
           <span>Register Staff</span>
         </NavLink>
+        <NavLink to="staff-members" className={({ isActive }) => (isActive ? "active" : "")}>
+          <UsersRound size={18} />
+          <span>Staff Members</span>
+        </NavLink>
         <NavLink to="reports" className={({ isActive }) => (isActive ? "active" : "")}>
           <FileText size={18} />
           <span>Reports</span>
@@ -49,14 +56,19 @@ function AdminNavbar({ collapsed, userName, userRole }) {
       </nav>
 
       <div className="sidebar-footer">
-        <div className="footer-user">
-          <div className="avatar" style={{ backgroundColor: colorForName(userName) }}>
-            {letterFor(userName) || "A"}
+        <div className="footer-user profile-card">
+          <div className="avatar-ring">
+            <div className="avatar" style={{ backgroundColor: colorForName(displayName) }}>
+              {letterFor(displayName) || "A"}
+            </div>
           </div>
           {!collapsed && (
             <div className="user-info">
-              <div className="user-name">{userName || "Admin User"}</div>
-              <div className="user-role">{userRole || "Administrator"}</div>
+              <div className="user-name">{displayName}</div>
+              <div className="user-role">
+                <span className="role-dot" />
+                {displayRole}
+              </div>
             </div>
           )}
         </div>

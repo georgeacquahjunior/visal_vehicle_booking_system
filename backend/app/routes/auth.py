@@ -6,6 +6,11 @@ from ..models.users import User
 auth_bp = Blueprint("auth", __name__, url_prefix="/auth")
 
 
+@auth_bp.route("/", methods=["GET"])
+def home():
+    return jsonify({"status": "Flask is working 🚀"}), 200
+
+
 # Health check endpoint for Render
 @auth_bp.route("/health", methods=["GET"])
 def health_check():
