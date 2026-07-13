@@ -84,7 +84,7 @@ function Approvals() {
   const totalPages = Math.max(1, Math.ceil(filteredBookings.length / PAGE_SIZE));
   const pageStart = (currentPage - 1) * PAGE_SIZE;
   const visibleBookings = filteredBookings.slice(pageStart, pageStart + PAGE_SIZE);
-  const pageNumbers = Array.from({ length: totalPages }, (_, index) => index + 1);
+  const pageNumbers = getPaginationRange(currentPage, totalPages);
 
   const statusCounts = {
     all: bookings.length,
@@ -259,15 +259,17 @@ function Approvals() {
           </PanelState>
         ) : (
           <>
-            <div className="overflow-x-auto rounded-2xl border border-[rgba(15,23,42,0.08)] bg-white">
-              <table className="w-full min-w-[980px] border-collapse text-sm">
+            <div className="rounded-2xl border border-[rgba(15,23,42,0.08)] bg-white">
+              <table className="w-full table-fixed border-collapse text-sm">
                 <thead className="bg-[#f4f7fb]">
                   <tr>
-                    {["Requester", "Purpose", "Date & time", "Duration", "Location", "Status", ""].map((heading) => (
-                      <th key={heading || "actions"} className="border-b border-[rgba(15,23,42,0.08)] px-4 py-4 text-left text-xs font-bold uppercase tracking-[0.08em] text-[#61728c]">
-                        {heading}
-                      </th>
-                    ))}
+                    <th className="w-[24%] border-b border-[rgba(15,23,42,0.08)] px-4 py-4 text-left text-xs font-bold uppercase tracking-[0.08em] text-[#61728c]">Requester</th>
+                    <th className="w-[22%] border-b border-[rgba(15,23,42,0.08)] px-4 py-4 text-left text-xs font-bold uppercase tracking-[0.08em] text-[#61728c]">Purpose</th>
+                    <th className="w-[18%] border-b border-[rgba(15,23,42,0.08)] px-4 py-4 text-left text-xs font-bold uppercase tracking-[0.08em] text-[#61728c]">Date & time</th>
+                    <th className="hidden w-[10%] border-b border-[rgba(15,23,42,0.08)] px-4 py-4 text-left text-xs font-bold uppercase tracking-[0.08em] text-[#61728c] lg:table-cell">Duration</th>
+                    <th className="hidden w-[14%] border-b border-[rgba(15,23,42,0.08)] px-4 py-4 text-left text-xs font-bold uppercase tracking-[0.08em] text-[#61728c] md:table-cell">Location</th>
+                    <th className="w-[12%] border-b border-[rgba(15,23,42,0.08)] px-4 py-4 text-left text-xs font-bold uppercase tracking-[0.08em] text-[#61728c]">Status</th>
+                    <th className="w-[10%] border-b border-[rgba(15,23,42,0.08)] px-4 py-4 text-left text-xs font-bold uppercase tracking-[0.08em] text-[#61728c]" />
                   </tr>
                 </thead>
                 <tbody>
@@ -279,30 +281,30 @@ function Approvals() {
                       <tr key={booking.id} className="border-b border-[rgba(15,23,42,0.06)] hover:bg-[rgba(17,74,157,0.03)]">
                         <td className="px-4 py-4 align-middle">
                           <div className="flex items-center gap-3">
-                            <div className="inline-flex h-10 w-10 items-center justify-center rounded-2xl bg-gradient-to-br from-[#1d62bf] to-[#113f82] font-bold text-white">
+                            <div className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-[#1d62bf] to-[#113f82] font-bold text-white">
                               {nameInitials(booking.userName)}
                             </div>
                             <div className="min-w-0">
                               <strong className="block truncate font-semibold text-[#11233f]">{booking.userName}</strong>
-                              <span className="text-xs text-[#7b8ba5]">{booking.userDept || "No department"}</span>
+                              <span className="block truncate text-xs text-[#7b8ba5]">{booking.userDept || "No department"}</span>
                             </div>
                           </div>
                         </td>
-                        <td className="max-w-[220px] px-4 py-4 align-middle text-[#53657f]">
+                        <td className="px-4 py-4 align-middle text-[#53657f]">
                           <span className="line-clamp-2">{booking.purpose}</span>
                         </td>
                         <td className="px-4 py-4 align-middle">
                           <div className="leading-tight text-[#53657f]">
-                            <div className="font-semibold text-[#11233f]">{formatDate(booking.date)}</div>
-                            <div className="mt-1 text-xs text-[#7b8ba5]">{booking.startTime} - {booking.endTime}</div>
+                            <div className="truncate font-semibold text-[#11233f]">{formatDate(booking.date)}</div>
+                            <div className="mt-1 truncate text-xs text-[#7b8ba5]">{booking.startTime} - {booking.endTime}</div>
                           </div>
                         </td>
-                        <td className="px-4 py-4 align-middle">
+                        <td className="hidden px-4 py-4 align-middle lg:table-cell">
                           <span className="inline-flex rounded-full bg-blue-50 px-3 py-1.5 text-xs font-bold text-blue-700">
                             {calculateDuration(booking.startTime, booking.endTime)}
                           </span>
                         </td>
-                        <td className="px-4 py-4 align-middle text-[#53657f]">{booking.location}</td>
+                        <td className="hidden truncate px-4 py-4 align-middle text-[#53657f] md:table-cell">{booking.location}</td>
                         <td className="px-4 py-4 align-middle">
                           <span className={`inline-flex rounded-full px-3 py-1.5 text-xs font-bold capitalize ${statusBadgeClass(booking.status)}`}>
                             {statusLabel(booking.status)}
@@ -361,11 +363,17 @@ function Approvals() {
                 <PaginationButton disabled={currentPage === 1} onClick={() => setCurrentPage((page) => Math.max(1, page - 1))}>
                   <ChevronLeft size={16} />
                 </PaginationButton>
-                {pageNumbers.map((page) => (
-                  <PaginationButton key={page} active={page === currentPage} onClick={() => setCurrentPage(page)}>
-                    {page}
-                  </PaginationButton>
-                ))}
+                {pageNumbers.map((page, index) =>
+                  page === "dots" ? (
+                    <span key={`dots-${index}`} className="inline-flex h-9 min-w-9 items-center justify-center text-sm font-bold text-slate-400">
+                      ...
+                    </span>
+                  ) : (
+                    <PaginationButton key={page} active={page === currentPage} onClick={() => setCurrentPage(page)}>
+                      {page}
+                    </PaginationButton>
+                  )
+                )}
                 <PaginationButton disabled={currentPage === totalPages} onClick={() => setCurrentPage((page) => Math.min(totalPages, page + 1))}>
                   <ChevronRight size={16} />
                 </PaginationButton>
@@ -581,6 +589,35 @@ function statusBadgeClass(status) {
   if (status === "approved") return "bg-emerald-50 text-emerald-700";
   if (status === "declined") return "bg-rose-50 text-rose-700";
   return "bg-amber-50 text-amber-700";
+}
+
+function range(start, end) {
+  return Array.from({ length: end - start + 1 }, (_, index) => start + index);
+}
+
+function getPaginationRange(currentPage, totalPages, siblingCount = 0) {
+  const totalSlots = siblingCount * 2 + 5; // first + last + current + 2 siblings + 2 dots
+
+  if (totalSlots >= totalPages) {
+    return range(1, totalPages);
+  }
+
+  const leftSibling = Math.max(currentPage - siblingCount, 1);
+  const rightSibling = Math.min(currentPage + siblingCount, totalPages);
+  const showLeftDots = leftSibling > 2;
+  const showRightDots = rightSibling < totalPages - 1;
+
+  if (!showLeftDots && showRightDots) {
+    const leftRange = range(1, 3 + siblingCount * 2);
+    return [...leftRange, "dots", totalPages];
+  }
+
+  if (showLeftDots && !showRightDots) {
+    const rightRange = range(totalPages - (3 + siblingCount * 2) + 1, totalPages);
+    return [1, "dots", ...rightRange];
+  }
+
+  return [1, "dots", ...range(leftSibling, rightSibling), "dots", totalPages];
 }
 
 export default Approvals;

@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
+import { Link } from "react-router-dom";
 import {
   AlertCircle,
   CalendarClock,
@@ -6,6 +7,7 @@ import {
   Clock3,
   ShieldCheck,
   UsersRound,
+  X,
 } from "lucide-react";
 import {
   Bar,
@@ -19,7 +21,10 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
-import { API_BASE_URL } from "../../../config.js";
+import { API_BASE_URL } from "../../config.js";
+import { approveBookingAPI, declineBookingAPI } from "../../utils/approvals.js";
+
+const PENDING_PREVIEW_LIMIT = 5;
 
 const STATUS_COLORS = {
   approved: "#1f8f63",
@@ -33,6 +38,11 @@ function Dashboard() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [staffError, setStaffError] = useState(null);
+  const [processingId, setProcessingId] = useState(null);
+  const [actionError, setActionError] = useState("");
+  const [successMessage, setSuccessMessage] = useState("");
+  const [declineTarget, setDeclineTarget] = useState(null);
+  const [declineReason, setDeclineReason] = useState("");
 
   useEffect(() => {
     const fetchBookings = async () => {
@@ -116,8 +126,50 @@ function Dashboard() {
     return { activeStaff, admins, approved, declined, pending, totalHours };
   }, [requests, staff]);
 
-  const recentRequests = requests.slice(0, 4);
+  const pendingRequests = requests.filter((request) => request.status === "pending");
+  const pendingPreview = pendingRequests.slice(0, PENDING_PREVIEW_LIMIT);
   const nextRequest = requests.find((request) => request.status === "pending") || requests[0] || null;
+
+  const handleApprove = async (request) => {
+    setProcessingId(request.id);
+    setActionError("");
+    try {
+      await approveBookingAPI(request.id);
+      setRequests((current) =>
+        current.map((item) => (item.id === request.id ? { ...item, status: "approved" } : item))
+      );
+      setSuccessMessage("Booking approved successfully.");
+    } catch (err) {
+      setActionError(err.message || "Failed to approve booking.");
+    } finally {
+      setProcessingId(null);
+    }
+  };
+
+  const openDeclineDialog = (request) => {
+    setDeclineTarget(request);
+    setDeclineReason("");
+    setActionError("");
+  };
+
+  const confirmDecline = async () => {
+    if (!declineTarget || !declineReason.trim()) return;
+    setProcessingId(declineTarget.id);
+    setActionError("");
+    try {
+      await declineBookingAPI(declineTarget.id, declineReason.trim());
+      setRequests((current) =>
+        current.map((item) => (item.id === declineTarget.id ? { ...item, status: "declined" } : item))
+      );
+      setSuccessMessage("Booking declined successfully.");
+      setDeclineTarget(null);
+      setDeclineReason("");
+    } catch (err) {
+      setActionError(err.message || "Failed to decline booking.");
+    } finally {
+      setProcessingId(null);
+    }
+  };
 
   const statusChartData = useMemo(
     () =>
@@ -172,16 +224,39 @@ function Dashboard() {
         <MetricCard icon={ShieldCheck} label="System posture" value={staffError || error ? "Check" : "Stable"} detail={staffError || error ? "One or more feeds need attention" : "Core dashboard feeds are responding"} tone="indigo" />
       </section>
 
+      {(actionError || successMessage) && (
+        <div className={`mt-[22px] flex items-center gap-3 rounded-2xl border px-5 py-4 ${actionError ? "border-rose-200 bg-rose-50 text-rose-700" : "border-emerald-200 bg-emerald-50 text-emerald-700"}`}>
+          {actionError ? <AlertCircle size={18} /> : <CheckCircle2 size={18} />}
+          <span className="flex-1 text-sm font-semibold">{actionError || successMessage}</span>
+          <button
+            type="button"
+            className="rounded-lg p-1 hover:bg-black/5"
+            onClick={() => {
+              setActionError("");
+              setSuccessMessage("");
+            }}
+            aria-label="Dismiss message"
+          >
+            <X size={16} />
+          </button>
+        </div>
+      )}
+
       <section className="mt-[22px] grid gap-[22px] xl:grid-cols-[minmax(0,1.45fr)_minmax(360px,0.85fr)]">
         <article className="rounded-[28px] border border-[rgba(15,23,42,0.08)] bg-white p-6">
           <div className="mb-[18px] flex flex-col justify-between gap-4 md:flex-row md:items-start">
             <div>
               <p className="text-xs font-bold uppercase tracking-[0.14em] text-[#6b7f9e]">Review queue</p>
-              <h2 className="mt-1.5 text-[1.4rem] font-bold text-[#11233f]">Recent booking requests</h2>
+              <h2 className="mt-1.5 text-[1.4rem] font-bold text-[#11233f]">Pending booking requests</h2>
             </div>
-            <div className="inline-flex w-fit items-center gap-2 rounded-full bg-[#edf4ff] px-3 py-2.5 text-[13px] font-bold text-[#114a9d]">
-              <CalendarClock size={16} />
-              <span>{stats.pending} awaiting action</span>
+            <div className="flex items-center gap-2">
+              <div className="inline-flex w-fit items-center gap-2 rounded-full bg-[#edf4ff] px-3 py-2.5 text-[13px] font-bold text-[#114a9d]">
+                <CalendarClock size={16} />
+                <span>{stats.pending} awaiting action</span>
+              </div>
+              <Link to="approvals" className="inline-flex w-fit items-center gap-1 rounded-full border border-[rgba(15,23,42,0.1)] px-3 py-2.5 text-[13px] font-bold text-[#53657f] hover:border-[#1469e1] hover:text-[#1469e1]">
+                View all
+              </Link>
             </div>
           </div>
 
@@ -189,33 +264,55 @@ function Dashboard() {
             <PanelState>Loading booking requests...</PanelState>
           ) : error ? (
             <PanelState error>{error}</PanelState>
-          ) : recentRequests.length === 0 ? (
-            <PanelState>No booking requests available.</PanelState>
+          ) : pendingPreview.length === 0 ? (
+            <PanelState>No pending booking requests right now.</PanelState>
           ) : (
             <div className="grid gap-4">
-              {recentRequests.map((request) => (
-                <article key={request.id} className="rounded-[22px] border border-[rgba(15,23,42,0.08)] bg-gradient-to-b from-white to-[#fbfcfe] p-[18px]">
-                  <div className="flex flex-col justify-between gap-4 md:flex-row md:items-center">
-                    <div className="flex items-center gap-3.5">
-                      <div className="flex h-[46px] w-[46px] shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-[#1d62bf] to-[#113f82] font-bold text-white">
-                        {nameInitials(request.userName)}
+              {pendingPreview.map((request) => {
+                const isProcessing = processingId === request.id;
+                return (
+                  <article key={request.id} className="rounded-[22px] border border-[rgba(15,23,42,0.08)] bg-gradient-to-b from-white to-[#fbfcfe] p-[18px]">
+                    <div className="flex flex-col justify-between gap-4 md:flex-row md:items-center">
+                      <div className="flex items-center gap-3.5">
+                        <div className="flex h-[46px] w-[46px] shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-[#1d62bf] to-[#113f82] font-bold text-white">
+                          {nameInitials(request.userName)}
+                        </div>
+                        <div>
+                          <h3 className="m-0 text-base font-bold text-[#11233f]">{request.userName}</h3>
+                          <p className="mt-1 text-[13px] text-[#7b8ba5]">{formatDate(request.bookingDate)}</p>
+                        </div>
                       </div>
-                      <div>
-                        <h3 className="m-0 text-base font-bold text-[#11233f]">{request.userName}</h3>
-                        <p className="mt-1 text-[13px] text-[#7b8ba5]">{formatDate(request.bookingDate)}</p>
-                      </div>
+                      <span className={`inline-flex w-fit rounded-full px-3 py-1.5 text-xs font-bold capitalize ${statusBadgeClass(request.status)}`}>
+                        {statusLabel(request.status)}
+                      </span>
                     </div>
-                    <span className={`inline-flex w-fit rounded-full px-3 py-1.5 text-xs font-bold capitalize ${statusBadgeClass(request.status)}`}>
-                      {statusLabel(request.status)}
-                    </span>
-                  </div>
 
-                  <div className="mt-4 flex flex-wrap items-center justify-between gap-3 text-sm text-[#53657f]">
-                    <span>{request.startTime} - {request.endTime}</span>
-                    <span>{request.location}</span>
-                  </div>
-                </article>
-              ))}
+                    <div className="mt-4 flex flex-wrap items-center justify-between gap-3 text-sm text-[#53657f]">
+                      <span>{request.startTime} - {request.endTime}</span>
+                      <span>{request.location}</span>
+                    </div>
+
+                    <div className="mt-4 flex flex-wrap justify-end gap-2 border-t border-[rgba(15,23,42,0.06)] pt-4">
+                      <button
+                        type="button"
+                        className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-xs font-bold text-rose-700 hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-50"
+                        onClick={() => openDeclineDialog(request)}
+                        disabled={isProcessing}
+                      >
+                        Decline
+                      </button>
+                      <button
+                        type="button"
+                        className="rounded-xl bg-emerald-700 px-4 py-2 text-xs font-bold text-white disabled:cursor-not-allowed disabled:opacity-60"
+                        onClick={() => handleApprove(request)}
+                        disabled={isProcessing}
+                      >
+                        {isProcessing ? "Processing..." : "Approve"}
+                      </button>
+                    </div>
+                  </article>
+                );
+              })}
             </div>
           )}
         </article>
@@ -260,6 +357,44 @@ function Dashboard() {
           </div>
         </ChartPanel>
       </section>
+
+      {declineTarget && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-5 backdrop-blur-md" onClick={() => !processingId && setDeclineTarget(null)}>
+          <div className="w-full max-w-md rounded-3xl border border-[rgba(15,23,42,0.08)] bg-white" onClick={(event) => event.stopPropagation()}>
+            <div className="flex items-start justify-between border-b border-slate-100 p-6">
+              <div>
+                <p className="text-xs font-bold uppercase tracking-[0.14em] text-[#6b7f9e]">Booking action</p>
+                <h2 className="mt-1.5 text-xl font-bold text-[#11233f]">Decline booking request</h2>
+              </div>
+              <button type="button" className="flex h-10 w-10 items-center justify-center rounded-xl bg-slate-100 text-slate-500 hover:text-[#11233f]" onClick={() => setDeclineTarget(null)} aria-label="Close dialog">
+                <X size={20} />
+              </button>
+            </div>
+            <div className="space-y-5 p-6">
+              <p className="m-0 text-sm text-[#53657f]">
+                Declining <strong className="text-[#11233f]">{declineTarget.userName}</strong>'s request for {formatDate(declineTarget.bookingDate)}.
+              </p>
+              <label className="block">
+                <span className="mb-2 block text-sm font-bold text-[#11233f]">Reason for decline</span>
+                <textarea
+                  className="min-h-24 w-full rounded-xl border border-slate-200 p-3 text-sm outline-none focus:border-[#1469e1]"
+                  value={declineReason}
+                  onChange={(event) => setDeclineReason(event.target.value)}
+                  placeholder="Add a clear reason for the requester..."
+                />
+              </label>
+              <div className="flex flex-wrap justify-end gap-3">
+                <button type="button" className="rounded-xl border border-slate-200 bg-white px-5 py-3 text-sm font-bold text-slate-600 hover:bg-slate-50" onClick={() => setDeclineTarget(null)} disabled={Boolean(processingId)}>
+                  Cancel
+                </button>
+                <button type="button" className="rounded-xl bg-rose-700 px-5 py-3 text-sm font-bold text-white disabled:cursor-not-allowed disabled:opacity-60" onClick={confirmDecline} disabled={Boolean(processingId) || !declineReason.trim()}>
+                  {processingId ? "Processing..." : "Decline booking"}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -1,9 +1,12 @@
+from datetime import datetime, timedelta
 from flask import Blueprint, request, jsonify
 from flask_jwt_extended import create_access_token, jwt_required, get_jwt_identity, get_jwt
 from .. import db
 from ..models.users import User
 
 auth_bp = Blueprint("auth", __name__, url_prefix="/auth")
+
+ONLINE_THRESHOLD_MINUTES = 5
 
 
 @auth_bp.route("/", methods=["GET"])
@@ -84,7 +87,10 @@ def login():
 
     if not user.check_password(password):
         return jsonify({"error": "Invalid credentials"}), 401
-    
+
+    user.last_active = datetime.utcnow()
+    db.session.commit()
+
     access_token = create_access_token(
         identity=str(user.staff_id),
         additional_claims={
@@ -127,3 +133,43 @@ def get_all_users():
         "count": len(users_data),
         "users": users_data
     }), 200
+
+
+# Heartbeat - called periodically by logged-in clients to mark themselves active
+@auth_bp.route("/heartbeat", methods=["POST"])
+@jwt_required()
+def heartbeat():
+    staff_id = get_jwt_identity()
+    user = User.query.get(staff_id)
+    if not user:
+        return jsonify({"error": "User not found"}), 404
+
+    user.last_active = datetime.utcnow()
+    db.session.commit()
+
+    return jsonify({"success": True, "last_active": user.last_active.isoformat()}), 200
+
+
+# Who's currently online (active within the last few minutes)
+@auth_bp.route("/online-users", methods=["GET"])
+@jwt_required()
+def online_users():
+    cutoff = datetime.utcnow() - timedelta(minutes=ONLINE_THRESHOLD_MINUTES)
+    users = (
+        User.query.filter(User.last_active.isnot(None), User.last_active >= cutoff)
+        .order_by(User.full_name.asc())
+        .all()
+    )
+
+    users_data = [
+        {
+            "staff_id": user.staff_id,
+            "full_name": user.full_name,
+            "role": user.role,
+            "department": user.department,
+            "last_active": user.last_active.isoformat(),
+        }
+        for user in users
+    ]
+
+    return jsonify({"success": True, "count": len(users_data), "users": users_data}), 200

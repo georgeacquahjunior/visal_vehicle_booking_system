@@ -23,6 +23,7 @@ class User(db.Model):
     department = db.Column(db.String(50))
     role = db.Column(db.String(20), nullable=False, default=Roles.STAFF)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    last_active = db.Column(db.DateTime, nullable=True)
 
     # Constructor to hash password automatically
     def __init__(self, staff_id, full_name, email, password, phone_number=None, department=None, role=Roles.STAFF):

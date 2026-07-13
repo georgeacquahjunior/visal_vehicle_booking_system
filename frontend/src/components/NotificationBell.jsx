@@ -1,6 +1,13 @@
 import React, { useState, useEffect, useRef } from 'react';
-import './NotificationBell.css';
-import { fetchNotifications, markNotificationRead, markAllNotificationsRead } from '../../utils/notifications';
+import { fetchNotifications, markNotificationRead, markAllNotificationsRead } from '../utils/notifications';
+
+const TYPE_INDICATOR_CLASS = {
+  approved: 'bg-emerald-500',
+  declined: 'bg-red-500',
+  submitted: 'bg-blue-500',
+  cancelled: 'bg-amber-500',
+  info: 'bg-gray-500',
+};
 
 function NotificationBell() {
   const [notifications, setNotifications] = useState([]);
@@ -65,18 +72,22 @@ function NotificationBell() {
   }, []);
 
   return (
-    <div className="notification-bell" ref={dropdownRef}>
-      <button className="bell-button" onClick={handleToggle} aria-label="Notifications">
+    <div className="relative inline-block" ref={dropdownRef}>
+      <button className="relative rounded-lg p-2 text-[1.4rem] text-gray-500 transition-all hover:bg-black/5 hover:text-gray-700" onClick={handleToggle} aria-label="Notifications">
         <i className="fas fa-bell"></i>
-        {unreadCount > 0 && <span className="badge">{unreadCount}</span>}
+        {unreadCount > 0 && (
+          <span className="absolute right-1 top-1 flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-red-500 px-1.5 text-[0.65rem] font-semibold text-white shadow-[0_2px_4px_rgba(0,0,0,0.1)]">
+            {unreadCount}
+          </span>
+        )}
       </button>
       {open && (
-        <div className="notification-dropdown">
-          <div className="dropdown-header">
+        <div className="absolute right-0 top-[120%] z-[1000] w-[380px] max-h-[480px] animate-slideDown overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-xl">
+          <div className="flex items-center justify-between border-b border-gray-200 bg-gray-50 px-5 py-4 text-[0.95rem] font-semibold text-gray-900">
             <span>Notifications</span>
             {notifications.length > 0 && (
               <button
-                className="mark-all"
+                className="rounded-md bg-transparent px-2 py-1 text-[0.8rem] font-medium text-blue-500 transition-all hover:bg-blue-500/10 hover:text-blue-600"
                 onClick={() => {
                   markAllNotificationsRead().catch(console.error);
                   setNotifications((prev) => prev.map((n) => ({ ...n, is_read: true })));
@@ -87,11 +98,11 @@ function NotificationBell() {
             )}
           </div>
 
-          <div className="dropdown-body">
+          <div className="max-h-[380px] overflow-y-auto">
             {notifications.length === 0 && (
-              <div className="empty">
-                <i className="fas fa-bell-slash"></i>
-                <p>No notifications yet</p>
+              <div className="px-5 py-10 text-center text-gray-400">
+                <i className="fas fa-bell-slash mb-3 block text-[2rem] text-gray-300"></i>
+                <p className="m-0 text-[0.9rem] font-medium">No notifications yet</p>
               </div>
             )}
 
@@ -100,17 +111,19 @@ function NotificationBell() {
               return (
                 <div
                   key={n.id}
-                  className={`notification-item ${n.is_read ? '' : 'unread'} ${type}`}
+                  className={`border-b border-gray-100 transition-colors last:border-b-0 hover:bg-gray-50 ${n.is_read ? '' : 'border-l-[3px] border-l-blue-500 bg-white'}`}
                 >
-                  <div className="notification-card">
-                    <div className="notification-card-header">
-                      <div className={`type-indicator ${type}`} />
-                      <div className="notification-title-group">
-                        <div className="title">{n.title || statusLabel(type)}</div>
-                        <div className="time">{formatNotificationTime(n.created_at)}</div>
+                  <div className="flex flex-col gap-2 px-5 py-4">
+                    <div className="flex items-start gap-3">
+                      <div className={`mt-1.5 h-2 w-2 shrink-0 rounded-full ${TYPE_INDICATOR_CLASS[type] || TYPE_INDICATOR_CLASS.info}`} />
+                      <div className="flex flex-1 flex-col gap-0.5">
+                        <div className={`text-[0.9rem] leading-tight text-gray-900 ${n.is_read ? 'font-semibold' : 'font-bold'}`}>
+                          {n.title || statusLabel(type)}
+                        </div>
+                        <div className="text-[0.75rem] font-medium text-gray-400">{formatNotificationTime(n.created_at)}</div>
                       </div>
                     </div>
-                    <div className="message">{n.message}</div>
+                    <p className="m-0 line-clamp-2 text-[0.85rem] leading-relaxed text-gray-500">{n.message}</p>
                   </div>
                 </div>
               );

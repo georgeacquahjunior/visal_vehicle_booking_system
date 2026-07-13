@@ -48,7 +48,7 @@ def send_daily_booking_summary():
         current_app.logger.warning("Daily booking summary skipped: no admin email addresses found.")
         return False
 
-    subject = f"Booking Summary for {today.strftime('%B %d')} and future bookings"
+    subject = f"Late Booking Summary"
     if not upcoming_bookings:
         body = f"There are no bookings scheduled for {today.strftime('%B %d')} or future dates."
         html_body = _create_summary_email_template(body, [])

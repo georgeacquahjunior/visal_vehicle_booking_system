@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
-import "./ScheduleView.css";
-import { API_BASE_URL } from "../../config.js";
+import { API_BASE_URL } from "../config.js";
 
 function ScheduleView() {
   const [currentDate, setCurrentDate] = useState(new Date());
@@ -85,8 +84,8 @@ function ScheduleView() {
     fetchSchedule();
   }, []);
 
-  const filteredBookings = statusFilter === 'all' 
-    ? bookings 
+  const filteredBookings = statusFilter === 'all'
+    ? bookings
     : bookings.filter(b => (b.status || '').toString().toLowerCase() === statusFilter);
 
   const getWeekDays = () => {
@@ -112,7 +111,7 @@ function ScheduleView() {
     const month = String(d.getMonth() + 1).padStart(2, '0');
     const year = d.getFullYear();
     const dayName = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][d.getDay()];
-    
+
     if (format === 'MMM d') return `${['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][d.getMonth()]} ${day}`;
     if (format === 'EEE') return dayName;
     if (format === 'd') return day;
@@ -120,7 +119,7 @@ function ScheduleView() {
   };
 
   const weekDays = getWeekDays();
-  
+
   // Generate 30-minute time slots from 6 AM to 6 PM
   const timeSlots = Array.from({ length: 24 }, (_, i) => {
     const totalMinutes = 6 * 60 + i * 30; // Start at 6:00 AM, increment by 30 mins
@@ -180,7 +179,7 @@ function ScheduleView() {
   // Group overlapping bookings for side-by-side layout
   const getBookingColumns = (bookings) => {
     if (bookings.length === 0) return [];
-    
+
     // Sort bookings by start time
     const sorted = [...bookings].sort((a, b) => {
       const aStart = a.startTime.split(':').map(Number);
@@ -189,7 +188,7 @@ function ScheduleView() {
     });
 
     const columns = [];
-    
+
     sorted.forEach(booking => {
       const [startH, startM] = booking.startTime.split(':').map(Number);
       const [endH, endM] = booking.endTime.split(':').map(Number);
@@ -255,6 +254,11 @@ function ScheduleView() {
     return 'pending';
   };
 
+  const BOOKING_CARD_CLASS = {
+    approved: "bg-[#d1fae5] border-l-4 border-l-emerald-500 text-[#065f46]",
+    pending: "bg-[#fef3c7] border-l-4 border-l-amber-500 text-[#92400e]",
+  };
+
   const handleEdit = (booking) => {
     // Placeholder for edit functionality
     console.log('Edit booking:', booking);
@@ -263,71 +267,57 @@ function ScheduleView() {
   const currentTimePosition = getCurrentTimePosition();
 
   return (
-    <div className="schedule-page">
-      <main className="main-content">
+    <div className="flex h-screen overflow-hidden bg-[#fcfbfb]">
+      <main className="flex h-full min-w-0 flex-1 flex-col overflow-hidden">
         {/* Header Section */}
-        <header className="header">
-          <div className="header-wrapper">
+        <header className="z-10 rounded-[20px] border border-blue-500/[0.15] bg-gradient-to-br from-white to-[#eef3ff] p-[10px_24px]">
+          <div className="mb-3 flex flex-col gap-4">
             {/* Title & Subtitle */}
-            <div className="header-title">
-              <h2>Schedule View</h2>
-              {/* <div className="header-subtitle">
-                <span>Manage and oversee all vehicle bookings</span>
-              </div> */}
+            <div>
+              <h2 className="mb-1 text-center text-[30px] tracking-[-0.015em] text-[#0b2a4a]">Schedule View</h2>
             </div>
 
             {/* Actions Toolbar */}
-            <div className="toolbar">
+            <div className="flex flex-wrap items-center justify-between gap-3">
               {/* Color Legend */}
-              <div className="color-legend">
-                <div className="legend-item">
-                  <div className="legend-dot approved"></div>
+              <div className="flex items-center gap-4 rounded-md border border-gray-200 bg-gray-50 p-[8px_12px]">
+                <div className="flex items-center gap-1.5 text-[13px] font-medium text-gray-600">
+                  <div className="h-3 w-3 shrink-0 rounded-[3px] bg-emerald-500"></div>
                   <span>Approved</span>
                 </div>
-                <div className="legend-item">
-                  <div className="legend-dot pending"></div>
+                <div className="flex items-center gap-1.5 text-[13px] font-medium text-gray-600">
+                  <div className="h-3 w-3 shrink-0 rounded-[3px] bg-amber-500"></div>
                   <span>Pending</span>
                 </div>
               </div>
 
-               {/* Date Navigation */}
-          <div className="date-controls">
-            <button className="nav-btn" onClick={() => navigate('prev')}>
-              <span><i className="fa-solid fa-angle-left"></i></span>
-            </button>
-            <div className="date-display">
-              {view === 'week'
-                ? `${formatDate(weekDays[0], 'MMM d')} - ${formatDate(weekDays[6], 'MMM d')}`
-                : formatDate(currentDate, 'MMM d')
-              }
-            </div>
-            <button className="nav-btn" onClick={() => navigate('next')}>
-              <span><i className="fa-solid fa-angle-right"></i></span>
-            </button>
-            <button className="btn-today" onClick={() => setCurrentDate(new Date())}>Today</button>
-          </div>
-
-              {/* Status Filter */}
-              {/* <select 
-                className="filter-select"
-                value={statusFilter}
-                onChange={(e) => setStatusFilter(e.target.value)}
-              >
-                <option value="all">All Statuses</option>
-                <option value="approved">Approved</option>
-                <option value="pending">Pending</option>
-              </select> */}
+              {/* Date Navigation */}
+              <div className="flex items-center justify-center gap-3">
+                <button className="flex items-center justify-center rounded-md border border-[#d9d6e1] bg-white p-2 transition-all hover:bg-black/[0.02]" onClick={() => navigate('prev')}>
+                  <span><i className="fa-solid fa-angle-left"></i></span>
+                </button>
+                <div className="min-w-[140px] rounded-md border border-[#d9d6e1] bg-white p-[8px_16px] text-center text-sm font-semibold text-[#131117]">
+                  {view === 'week'
+                    ? `${formatDate(weekDays[0], 'MMM d')} - ${formatDate(weekDays[6], 'MMM d')}`
+                    : formatDate(currentDate, 'MMM d')
+                  }
+                </div>
+                <button className="flex items-center justify-center rounded-md border border-[#d9d6e1] bg-white p-2 transition-all hover:bg-black/[0.02]" onClick={() => navigate('next')}>
+                  <span><i className="fa-solid fa-angle-right"></i></span>
+                </button>
+                <button className="cursor-pointer rounded-md border border-[#d9d6e1] bg-white px-4 py-2 text-sm font-semibold text-[#131117] transition-all hover:bg-black/[0.02]" onClick={() => setCurrentDate(new Date())}>Today</button>
+              </div>
 
               {/* View Tabs */}
-              <div className="view-tabs">
-                <button 
-                  className={`tab-btn ${view === 'day' ? 'active' : ''}`}
+              <div className="flex rounded-md border border-[#d9d6e1] bg-white">
+                <button
+                  className={`cursor-pointer border-r border-[#d9d6e1] px-4 py-2 font-medium transition-all last:border-r-0 hover:bg-black/[0.02] ${view === 'day' ? 'rounded-[5px] bg-[#0b77be] text-white' : 'bg-transparent text-[#6b6284]'}`}
                   onClick={() => setView('day')}
                 >
                   Day
                 </button>
-                <button 
-                  className={`tab-btn ${view === 'week' ? 'active' : ''}`}
+                <button
+                  className={`cursor-pointer border-r border-[#d9d6e1] px-4 py-2 font-medium transition-all last:border-r-0 hover:bg-black/[0.02] ${view === 'week' ? 'rounded-[5px] bg-[#0b77be] text-white' : 'bg-transparent text-[#6b6284]'}`}
                   onClick={() => setView('week')}
                 >
                   Week
@@ -335,54 +325,55 @@ function ScheduleView() {
               </div>
             </div>
           </div>
-
-         
         </header>
 
         {/* Calendar Grid Container */}
-        <div className="calendar-wrapper">
-          <div className="calendar-container">
+        <div className="relative flex flex-1 flex-col overflow-hidden bg-[#fcfbfb] p-6">
+          <div className="flex h-full flex-col overflow-hidden rounded-xl border border-[#eceaf0] bg-white">
             {view === 'week' && (
               <>
                 {/* Week Header */}
-                <div className="calendar-header">
-                  <div className="time-zone"><span>GMT</span></div>
-                  <div className="days-header">
-                    {weekDays.map((day, idx) => (
-                      <div key={idx} className={`day-column ${isSameDay(day, new Date()) ? 'current-day' : ''}`}>
-                        <p className="day-name">{formatDate(day, 'EEE')}</p>
-                        <div className={`day-number ${isSameDay(day, new Date()) ? 'active' : ''}`}>{formatDate(day, 'd')}</div>
-                      </div>
-                    ))}
+                <div className="z-[1] grid shrink-0 grid-cols-[60px_1fr] border-b border-[#eceaf0] bg-white">
+                  <div className="flex items-end justify-center border-r border-[#eceaf0] p-4 pb-2"><span className="text-xs font-bold uppercase text-gray-400">GMT</span></div>
+                  <div className="grid grid-cols-7">
+                    {weekDays.map((day, idx) => {
+                      const isToday = isSameDay(day, new Date());
+                      return (
+                        <div key={idx} className={`border-r border-[#eceaf0] p-3 text-center transition-all last:border-r-0 hover:bg-black/[0.02] ${isToday ? 'bg-[rgba(63,47,106,0.05)]' : ''}`}>
+                          <p className={`mb-2 text-xs uppercase tracking-[0.05em] ${isToday ? 'font-bold text-[#0b77be]' : 'font-medium text-gray-400'}`}>{formatDate(day, 'EEE')}</p>
+                          <div className={`mx-auto flex h-8 w-8 items-center justify-center rounded-full text-sm font-bold transition-all ${isToday ? 'bg-[#0b77be] text-white shadow-[0_4px_12px_rgba(63,47,106,0.3)]' : 'text-[#131117]'}`}>{formatDate(day, 'd')}</div>
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
 
                 {/* Week Calendar Body */}
-                <div className="calendar-body" ref={calendarBodyRef}>
-                  <div className="calendar-grid">
-                    <div className="time-column">
+                <div className="relative flex-1 overflow-y-auto [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:rounded-[20px] [&::-webkit-scrollbar-thumb]:bg-gray-300 [&::-webkit-scrollbar-track]:bg-transparent" ref={calendarBodyRef}>
+                  <div className="grid min-h-full grid-cols-[60px_1fr]">
+                    <div className="flex flex-col border-r border-[#eceaf0] bg-white text-xs font-medium text-gray-400 select-none">
                       {timeSlots.map((time, idx) => (
-                        <div key={idx} className="time-slot"><span>{time}</span></div>
+                        <div key={idx} className="relative flex h-10 items-start justify-center pt-2"><span className="block -translate-y-1/2">{time}</span></div>
                       ))}
                     </div>
-                    <div className="events-grid">
+                    <div className="grid grid-cols-7">
                       {weekDays.map((day, dayIdx) => (
-                        <div key={dayIdx} className={`day-grid ${isSameDay(day, new Date()) ? 'current-day-grid' : ''}`}>
+                        <div key={dayIdx} className={`relative h-full border-r border-[#eceaf0] last:border-r-0 ${isSameDay(day, new Date()) ? 'bg-[rgba(63,47,106,0.02)]' : ''}`}>
                           {timeSlots.map((time, slotIdx) => {
                             const bookings = getBookingsForSlot(day, time);
                             const columns = getBookingColumns(bookings);
                             const columnCount = columns.length;
 
                             return (
-                              <div key={slotIdx} className="time-slot-container" style={{height: '40px', position: 'relative'}}>
-                                {columns.map((column, colIdx) => 
+                              <div key={slotIdx} className="relative border-b border-gray-100" style={{height: '40px', position: 'relative'}}>
+                                {columns.map((column, colIdx) =>
                                   column.map((booking, bookingIdx) => {
                                     // Only render if this is the first slot the booking appears in
                                     const [bookingStartH, bookingStartM] = booking.startTime.split(':').map(Number);
                                     const [slotH, slotM] = time.split(':').map(Number);
                                     const bookingStartMin = bookingStartH * 60 + bookingStartM;
                                     const slotStartMin = slotH * 60 + slotM;
-                                    
+
                                     if (bookingStartMin >= slotStartMin && bookingStartMin < slotStartMin + 30) {
                                       const style = getBookingStyle(booking, time);
                                       const width = columnCount > 1 ? `calc(${100 / columnCount}% - 4px)` : 'calc(100% - 8px)';
@@ -391,7 +382,7 @@ function ScheduleView() {
                                       return (
                                         <div
                                           key={`${colIdx}-${bookingIdx}`}
-                                          className={`booking-card ${getStatusClass(booking.status)}`}
+                                          className={`absolute z-10 overflow-hidden rounded-md p-2 text-xs transition-all hover:-translate-y-px hover:shadow-[0_2px_8px_rgba(0,0,0,0.15)] hover:brightness-95 ${BOOKING_CARD_CLASS[getStatusClass(booking.status)]}`}
                                           onClick={() => handleEdit(booking)}
                                           style={{
                                             ...style,
@@ -400,8 +391,8 @@ function ScheduleView() {
                                             cursor: 'pointer',
                                           }}
                                         >
-                                          <div className="booking-title">{booking.purpose || booking.vehicleName}</div>
-                                          <div className="booking-time">{booking.userName} • {booking.duration || `${booking.startTime} - ${booking.endTime}`}</div>
+                                          <div className="mb-1 overflow-hidden text-ellipsis whitespace-nowrap text-xs font-bold">{booking.purpose || booking.vehicleName}</div>
+                                          <div className="text-[10px] font-medium opacity-80">{booking.userName} • {booking.duration || `${booking.startTime} - ${booking.endTime}`}</div>
                                         </div>
                                       );
                                     }
@@ -413,12 +404,12 @@ function ScheduleView() {
                           })}
                           {/* Current Time Indicator for Today */}
                           {isSameDay(day, new Date()) && currentTimePosition !== null && (
-                            <div 
-                              className="current-time-indicator"
+                            <div
+                              className="absolute left-0 right-0 z-20 pointer-events-none"
                               style={{ top: `${currentTimePosition}px` }}
                             >
-                              <div className="time-indicator-dot"></div>
-                              <div className="time-indicator-line"></div>
+                              <div className="absolute -left-1 -top-1 h-2.5 w-2.5 rounded-full border-2 border-white bg-red-500 shadow-[0_0_4px_rgba(239,68,68,0.5)]"></div>
+                              <div className="absolute left-0 right-0 h-0.5 w-full bg-red-500 shadow-[0_0_4px_rgba(239,68,68,0.5)]"></div>
                             </div>
                           )}
                         </div>
@@ -430,32 +421,32 @@ function ScheduleView() {
             )}
 
             {view === 'day' && (
-              <div className="day-view">
+              <div className="relative flex-1 overflow-y-auto">
                 {timeSlots.map((time, idx) => {
                   const bookings = getBookingsForSlot(currentDate, time);
                   const columns = getBookingColumns(bookings);
                   const columnCount = columns.length;
 
                   return (
-                    <div key={idx} className="day-slot">
-                      <div className="slot-time">{time}</div>
-                      <div className="slot-content">
-                        {columns.map((column, colIdx) => 
+                    <div key={idx} className="flex h-10 min-h-[50px] border-b border-gray-100">
+                      <div className="w-[60px] shrink-0 border-r border-[#eceaf0] p-3 text-right text-xs font-medium text-gray-400">{time}</div>
+                      <div className="relative flex-1">
+                        {columns.map((column, colIdx) =>
                           column.map((booking, bookingIdx) => {
                             const [bookingStartH, bookingStartM] = booking.startTime.split(':').map(Number);
                             const [slotH, slotM] = time.split(':').map(Number);
                             const bookingStartMin = bookingStartH * 60 + bookingStartM;
                             const slotStartMin = slotH * 60 + slotM;
-                            
+
                             if (bookingStartMin >= slotStartMin && bookingStartMin < slotStartMin + 30) {
                               const style = getBookingStyle(booking, time);
                               const width = columnCount > 1 ? `calc(${100 / columnCount}% - 8px)` : 'calc(100% - 16px)';
                               const left = columnCount > 1 ? `calc(${(colIdx * 100) / columnCount}% + 8px)` : '8px';
 
                               return (
-                                <div 
+                                <div
                                   key={`${colIdx}-${bookingIdx}`}
-                                  className={`booking-card ${getStatusClass(booking.status)}`}
+                                  className={`absolute z-10 overflow-hidden rounded-md p-2 text-xs transition-all hover:-translate-y-px hover:shadow-[0_2px_8px_rgba(0,0,0,0.15)] hover:brightness-95 ${BOOKING_CARD_CLASS[getStatusClass(booking.status)]}`}
                                   onClick={() => handleEdit(booking)}
                                   style={{
                                     ...style,
@@ -464,9 +455,9 @@ function ScheduleView() {
                                     position: 'absolute',
                                   }}
                                 >
-                                  <div className="booking-title">{booking.purpose || booking.vehicleName}</div>
-                                  <div className="booking-time">{booking.userName} • {booking.duration || `${booking.startTime} - ${booking.endTime}`}</div>
-                                  <div className="booking-desc">{booking.location}</div>
+                                  <div className="mb-1 overflow-hidden text-ellipsis whitespace-nowrap text-xs font-bold">{booking.purpose || booking.vehicleName}</div>
+                                  <div className="text-[10px] font-medium opacity-80">{booking.userName} • {booking.duration || `${booking.startTime} - ${booking.endTime}`}</div>
+                                  <div className="mt-1 text-[10px] leading-[1.3] opacity-70">{booking.location}</div>
                                 </div>
                               );
                             }
@@ -475,12 +466,12 @@ function ScheduleView() {
                         )}
                         {/* Current Time Indicator for Today's Day View */}
                         {isSameDay(currentDate, new Date()) && currentTimePosition !== null && idx === 0 && (
-                          <div 
-                            className="current-time-indicator"
+                          <div
+                            className="absolute left-0 right-0 z-20 pointer-events-none"
                             style={{ top: `${currentTimePosition}px` }}
                           >
-                            <div className="time-indicator-dot"></div>
-                            <div className="time-indicator-line"></div>
+                            <div className="absolute -left-1 -top-1 h-2.5 w-2.5 rounded-full border-2 border-white bg-red-500 shadow-[0_0_4px_rgba(239,68,68,0.5)]"></div>
+                            <div className="absolute left-0 right-0 h-0.5 w-full bg-red-500 shadow-[0_0_4px_rgba(239,68,68,0.5)]"></div>
                           </div>
                         )}
                       </div>

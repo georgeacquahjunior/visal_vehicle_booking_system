@@ -244,7 +244,10 @@ def approve_booking(booking_id):
     user = User.query.get(booking.user_id)
     if user and user.email:
         email_subject = "Booking Approved - Vehicle Booking System"
-        email_body = f"Dear {user.full_name},\n\nYour vehicle booking has been approved! Please ensure you have all necessary documents and follow the booking guidelines."
+        email_body = f"Dear {user.full_name},\n\nYour vehicle booking has been approved!"
+        if admin_comment:
+            email_body += f"\n\nAdmin comment: {admin_comment}"
+        email_body += "\n\nPlease ensure you have all necessary documents and follow the booking guidelines."
         
         booking_details = {
             'purpose': booking.purpose,
@@ -313,7 +316,10 @@ def decline_booking(booking_id):
     user = User.query.get(booking.user_id)
     if user and user.email:
         email_subject = "Booking Declined - Vehicle Booking System"
-        email_body = f"Dear {user.full_name},\n\nUnfortunately, your vehicle booking request has been declined. If you have any questions or need to make another booking request, please contact your administrator."
+        email_body = f"Dear {user.full_name},\n\nUnfortunately, your vehicle booking request has been declined."
+        if admin_comment:
+            email_body += f"\n\nAdmin comment: {admin_comment}"
+        email_body += "\n\nIf you have any questions or need to make another booking request, please contact your administrator."
         
         booking_details = {
             'purpose': booking.purpose,
