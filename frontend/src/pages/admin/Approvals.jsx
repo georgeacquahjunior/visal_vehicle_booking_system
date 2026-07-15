@@ -27,6 +27,7 @@ import { colorForName } from "../../utils/avatar.js";
 import InfoButton from "../../components/InfoButton";
 import Modal from "../../components/Modal";
 import Pagination from "../../components/Pagination";
+import Spinner from "../../components/Spinner";
 import useGreeting from "../../hooks/useGreeting.js";
 import { showToast } from "../../utils/toast.js";
 
@@ -282,7 +283,12 @@ function Approvals() {
         </div>
 
         {loading ? (
-          <PanelState>Loading booking requests...</PanelState>
+          <PanelState>
+            <div className="flex flex-col items-center gap-3">
+              <Spinner />
+              <span>Loading booking requests...</span>
+            </div>
+          </PanelState>
         ) : filteredBookings.length === 0 ? (
           <PanelState>
             <CalendarClock size={44} />

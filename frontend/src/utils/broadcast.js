@@ -19,10 +19,11 @@ const authHeaders = () => {
   };
 };
 
-export const sendBroadcastEmail = async ({ subject, html_body, audience, target_staff_id, sender }) => {
+export const sendBroadcastEmail = async ({ subject, html_body, audience, target_staff_id, sender, format }) => {
   const payload = { subject, html_body, audience };
   if (target_staff_id) payload.target_staff_id = target_staff_id;
   if (sender) payload.sender = sender;
+  if (format) payload.format = format;
 
   const res = await fetch(`${API_BASE_URL}/broadcast/email`, {
     method: "POST",

@@ -3,6 +3,7 @@ import { CheckCircle2, Clock3, LifeBuoy, MessageSquareReply, Send } from "lucide
 import { createSupportMessage, fetchSupportMessages } from "../utils/support.js";
 import InfoButton from "../components/InfoButton";
 import Pagination from "../components/Pagination";
+import Spinner from "../components/Spinner";
 import useGreeting from "../hooks/useGreeting.js";
 import { showToast } from "../utils/toast.js";
 
@@ -96,7 +97,9 @@ function HelpSupport() {
             <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-blue-700">
               <Clock3 size={18} />
             </div>
-            {openCount > 0 ? (
+            {loading ? (
+              <Spinner size={18} />
+            ) : openCount > 0 ? (
               <p className="m-0 text-[15px] text-[#11233f]">
                 <strong className="font-bold">{openCount} open</strong>
                 <span className="text-[#7b8ba5]"> · {messages.length} total message{messages.length === 1 ? "" : "s"}</span>
@@ -159,7 +162,12 @@ function HelpSupport() {
         <h2 className="m-0 mb-5 text-lg font-bold text-[#11233f]">Your messages</h2>
 
         {loading ? (
-          <PanelState>Loading your messages...</PanelState>
+          <PanelState>
+            <div className="flex flex-col items-center gap-3">
+              <Spinner />
+              <span>Loading your messages...</span>
+            </div>
+          </PanelState>
         ) : error ? (
           <PanelState error>{error}</PanelState>
         ) : messages.length === 0 ? (

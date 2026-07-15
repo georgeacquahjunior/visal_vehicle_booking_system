@@ -30,6 +30,7 @@ import {
 import { API_BASE_URL } from "../../config.js";
 import InfoButton from "../../components/InfoButton";
 import Pagination from "../../components/Pagination";
+import Spinner from "../../components/Spinner";
 import useGreeting from "../../hooks/useGreeting.js";
 
 const STATUS_COLORS = {
@@ -295,6 +296,13 @@ function Reports() {
         </div>
       </section>
 
+      {loading ? (
+        <div className="mt-5 flex min-h-[420px] flex-col items-center justify-center gap-3 rounded-[28px] bg-gradient-to-b from-slate-50 to-blue-50 p-5 text-center text-slate-600">
+          <Spinner />
+          <span>Loading report data...</span>
+        </div>
+      ) : (
+        <>
       {error && (
         <div className="mt-4 flex items-center gap-3 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
           <AlertCircle size={18} />
@@ -501,6 +509,8 @@ function Reports() {
 
         <Pagination currentPage={tablePage} onPageChange={setTablePage} pageSize={TABLE_PAGE_SIZE} totalItems={filteredBookings.length} />
       </section>
+        </>
+      )}
     </div>
   );
 }

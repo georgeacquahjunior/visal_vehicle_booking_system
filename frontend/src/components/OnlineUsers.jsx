@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from "react";
 import { ChevronDown, User, Users } from "lucide-react";
 import { fetchOnlineUsers, startHeartbeat } from "../utils/presence.js";
 import { colorForName, letterFor } from "../utils/avatar.js";
+import Spinner from "./Spinner";
 
 const POLL_INTERVAL_MS = 30000;
 const ONLINE_NOW_THRESHOLD_SECONDS = 45;
@@ -21,6 +22,7 @@ function formatLastActive(isoString) {
 
 function OnlineUsers() {
   const [users, setUsers] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [open, setOpen] = useState(false);
   const dropdownRef = useRef(null);
 
@@ -30,7 +32,8 @@ function OnlineUsers() {
     const load = () => {
       fetchOnlineUsers()
         .then(setUsers)
-        .catch((err) => console.warn("failed to load online users", err));
+        .catch((err) => console.warn("failed to load online users", err))
+        .finally(() => setLoading(false));
     };
 
     load();
@@ -70,7 +73,9 @@ function OnlineUsers() {
             <span className="relative h-[9px] w-[9px] rounded-full bg-emerald-500 shadow-[0_0_0_2px_rgba(255,255,255,0.9)]" />
           </span>
         </span>
-        <span className="whitespace-nowrap text-[12.5px] font-bold text-gray-700 max-[640px]:hidden">{users.length} </span>
+        <span className="whitespace-nowrap text-[12.5px] font-bold text-gray-700 max-[640px]:hidden">
+          {loading ? <Spinner size={13} className="inline align-middle" /> : users.length}
+        </span>
         <ChevronDown
           size={18}
           className={`text-gray-400 transition-transform duration-200 ${open ? "rotate-180" : ""}`}
@@ -84,7 +89,12 @@ function OnlineUsers() {
             <span className="rounded-full bg-[#eaf2ff] px-2.5 py-0.5 text-xs font-bold text-[#114a9d]">{users.length}</span>
           </div>
           <div className="max-h-[360px] overflow-y-auto">
-            {users.length === 0 ? (
+            {loading ? (
+              <div className="flex flex-col items-center gap-2 px-[18px] py-[34px] text-center text-gray-400">
+                <Spinner size={22} />
+                <p className="text-[0.85rem] font-medium">Loading...</p>
+              </div>
+            ) : users.length === 0 ? (
               <div className="px-[18px] py-[34px] text-center text-gray-400">
                 <Users size={22} className="mx-auto" />
                 <p className="mt-2 text-[0.85rem] font-medium">No one else is online right now</p>

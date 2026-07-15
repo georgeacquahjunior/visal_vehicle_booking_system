@@ -3,6 +3,7 @@ import { KeyRound, Lock, Mail, ShieldCheck, User as UserIcon, UserCog } from "lu
 import { changeMyPassword, fetchMyProfile, updateMyProfile } from "../utils/account.js";
 import { colorForName, letterFor } from "../utils/avatar.js";
 import InfoButton from "../components/InfoButton";
+import Spinner from "../components/Spinner";
 import useGreeting from "../hooks/useGreeting.js";
 import { showToast } from "../utils/toast.js";
 
@@ -119,6 +120,12 @@ function MyAccount() {
         </div>
       </section>
 
+      {loading && !profile ? (
+        <div className="mt-5 flex min-h-[220px] flex-col items-center justify-center gap-3 rounded-2xl bg-gradient-to-b from-slate-50 to-blue-50 p-5 text-center text-slate-600">
+          <Spinner />
+          <span>Loading your account...</span>
+        </div>
+      ) : (
       <div className="mt-5 grid grid-cols-1 gap-5 xl:grid-cols-[minmax(0,1.2fr)_minmax(0,0.8fr)]">
         <div className="flex flex-col gap-5">
           <section className="rounded-3xl border border-slate-200 bg-white p-6">
@@ -250,6 +257,7 @@ function MyAccount() {
           </dl>
         </section>
       </div>
+      )}
     </div>
   );
 }

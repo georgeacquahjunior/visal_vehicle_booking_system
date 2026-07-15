@@ -15,6 +15,7 @@ import {
 import { timeWindowValidation } from "../utils/bookings.js";
 import BookingModal from "../components/BookingModal";
 import InfoButton from "../components/InfoButton";
+import Spinner from "../components/Spinner";
 import { API_BASE_URL } from "../config.js";
 import { useSettings } from "../hooks/useSettings.js";
 import useGreeting from "../hooks/useGreeting.js";
@@ -449,32 +450,45 @@ function Booking() {
             )}
           </section>
 
-          {!upcomingLoading && upcoming.length > 0 && (
+          {upcomingLoading ? (
             <section className="rounded-3xl border border-slate-200 bg-white p-6">
-              <div className="mb-4 flex items-center justify-between gap-3">
-                <div className="flex items-center gap-2.5">
-                  <CalendarClock size={18} className="text-[#1469e1]" />
-                  <h2 className="m-0 text-lg font-bold text-[#11233f]">Upcoming</h2>
-                </div>
-                <Link to="/booking/viewbookings" className="inline-flex items-center gap-1 text-sm font-bold text-[#1469e1] hover:text-[#115cc7]">
-                  View all <ArrowRight size={14} />
-                </Link>
+              <div className="mb-4 flex items-center gap-2.5">
+                <CalendarClock size={18} className="text-[#1469e1]" />
+                <h2 className="m-0 text-lg font-bold text-[#11233f]">Upcoming</h2>
               </div>
-              <div className="flex flex-col gap-3">
-                {upcoming.map((booking) => (
-                  <div key={booking.id} className="rounded-2xl border border-slate-100 bg-slate-50/50 p-4">
-                    <div className="flex items-center justify-between gap-2">
-                      <span className="text-sm font-bold text-[#11233f]">{formatShortDate(booking.date)}</span>
-                      <span className={`shrink-0 rounded-full px-2.5 py-1 text-[11px] font-bold capitalize ${UPCOMING_STATUS_CLASS[booking.status] || "bg-slate-100 text-slate-600"}`}>
-                        {booking.status}
-                      </span>
-                    </div>
-                    <p className="m-0 mt-1.5 truncate text-sm text-slate-600" title={booking.purpose}>{booking.purpose}</p>
-                    <p className="m-0 mt-1 text-xs text-slate-400">{booking.startTime} - {booking.endTime} · {booking.location}</p>
-                  </div>
-                ))}
+              <div className="flex flex-col items-center justify-center gap-3 py-8 text-slate-500">
+                <Spinner />
+                <span className="text-sm font-medium">Loading upcoming bookings...</span>
               </div>
             </section>
+          ) : (
+            upcoming.length > 0 && (
+              <section className="rounded-3xl border border-slate-200 bg-white p-6">
+                <div className="mb-4 flex items-center justify-between gap-3">
+                  <div className="flex items-center gap-2.5">
+                    <CalendarClock size={18} className="text-[#1469e1]" />
+                    <h2 className="m-0 text-lg font-bold text-[#11233f]">Upcoming</h2>
+                  </div>
+                  <Link to="/booking/viewbookings" className="inline-flex items-center gap-1 text-sm font-bold text-[#1469e1] hover:text-[#115cc7]">
+                    View all <ArrowRight size={14} />
+                  </Link>
+                </div>
+                <div className="flex flex-col gap-3">
+                  {upcoming.map((booking) => (
+                    <div key={booking.id} className="rounded-2xl border border-slate-100 bg-slate-50/50 p-4">
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="text-sm font-bold text-[#11233f]">{formatShortDate(booking.date)}</span>
+                        <span className={`shrink-0 rounded-full px-2.5 py-1 text-[11px] font-bold capitalize ${UPCOMING_STATUS_CLASS[booking.status] || "bg-slate-100 text-slate-600"}`}>
+                          {booking.status}
+                        </span>
+                      </div>
+                      <p className="m-0 mt-1.5 truncate text-sm text-slate-600" title={booking.purpose}>{booking.purpose}</p>
+                      <p className="m-0 mt-1 text-xs text-slate-400">{booking.startTime} - {booking.endTime} · {booking.location}</p>
+                    </div>
+                  ))}
+                </div>
+              </section>
+            )
           )}
         </div>
       </div>

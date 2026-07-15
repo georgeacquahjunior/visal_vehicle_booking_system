@@ -28,6 +28,7 @@ import { approveBookingAPI, declineBookingAPI, isPastBooking } from "../../utils
 import { colorForName } from "../../utils/avatar.js";
 import InfoButton from "../../components/InfoButton";
 import Modal from "../../components/Modal";
+import Spinner from "../../components/Spinner";
 import useGreeting from "../../hooks/useGreeting.js";
 import { useSettings } from "../../hooks/useSettings.js";
 import { showToast } from "../../utils/toast.js";
@@ -46,6 +47,7 @@ function Dashboard() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [staffError, setStaffError] = useState(null);
+  const [staffLoading, setStaffLoading] = useState(true);
   const [processingId, setProcessingId] = useState(null);
   const [actionError, setActionError] = useState("");
   const [approveTarget, setApproveTarget] = useState(null);
@@ -95,6 +97,7 @@ function Dashboard() {
 
   useEffect(() => {
     const fetchStaff = async () => {
+      setStaffLoading(true);
       setStaffError(null);
       const token = localStorage.getItem("access_token");
 
@@ -117,6 +120,8 @@ function Dashboard() {
         );
       } catch (err) {
         setStaffError(err.message || "Failed to load staff");
+      } finally {
+        setStaffLoading(false);
       }
     };
 
@@ -249,10 +254,17 @@ function Dashboard() {
       </section>
 
       <section className="mt-[22px] grid grid-cols-1 gap-[18px] sm:grid-cols-2 xl:grid-cols-4">
-        <MetricCard icon={UsersRound} label="Active staff" value={stats.activeStaff} detail={`${stats.admins} admin account${stats.admins === 1 ? "" : "s"} with elevated access`} tone="blue" />
-        <MetricCard icon={AlertCircle} label="Pending requests" value={stats.pending} detail="Awaiting admin decision" tone="amber" />
-        <MetricCard icon={CheckCircle2} label="Approved requests" value={stats.approved} detail={`${stats.declined} declined request${stats.declined === 1 ? "" : "s"} in the full queue`} tone="green" />
-        <MetricCard icon={ShieldCheck} label="System posture" value={staffError || error ? "Check" : "Stable"} detail={staffError || error ? "One or more feeds need attention" : "Core dashboard feeds are responding"} tone="indigo" />
+        <MetricCard
+          icon={UsersRound}
+          label="Active staff"
+          loading={staffLoading}
+          value={stats.activeStaff}
+          detail={`${stats.admins} admin account${stats.admins === 1 ? "" : "s"} with elevated access`}
+          tone="blue"
+        />
+        <MetricCard icon={AlertCircle} label="Pending requests" loading={loading} value={stats.pending} detail="Awaiting admin decision" tone="amber" />
+        <MetricCard icon={CheckCircle2} label="Approved requests" loading={loading} value={stats.approved} detail={`${stats.declined} declined request${stats.declined === 1 ? "" : "s"} in the full queue`} tone="green" />
+        <MetricCard icon={ShieldCheck} label="System posture" loading={loading || staffLoading} value={staffError || error ? "Check" : "Stable"} detail={staffError || error ? "One or more feeds need attention" : "Core dashboard feeds are responding"} tone="indigo" />
       </section>
 
       <section className="mt-[22px] grid gap-[22px] xl:grid-cols-[minmax(0,1.45fr)_minmax(360px,0.85fr)]">
@@ -274,7 +286,12 @@ function Dashboard() {
           </div>
 
           {loading ? (
-            <PanelState>Loading booking requests...</PanelState>
+            <PanelState>
+              <div className="flex flex-col items-center gap-3">
+                <Spinner />
+                <span>Loading booking requests...</span>
+              </div>
+            </PanelState>
           ) : error ? (
             <PanelState error>{error}</PanelState>
           ) : pendingPreview.length === 0 ? (
@@ -340,45 +357,54 @@ function Dashboard() {
             <h2 className="mt-1 text-base font-bold text-[#11233f]">Approval status</h2>
           </div>
 
-          <ResponsiveContainer width="100%" height={190}>
-            <PieChart>
-              <Pie data={statusChartData} dataKey="value" nameKey="name" innerRadius={54} outerRadius={80} paddingAngle={4}>
+          {loading ? (
+            <div className="flex min-h-[300px] flex-col items-center justify-center gap-3 text-slate-500">
+              <Spinner />
+              <span className="text-sm font-medium">Loading analytics...</span>
+            </div>
+          ) : (
+            <>
+              <ResponsiveContainer width="100%" height={190}>
+                <PieChart>
+                  <Pie data={statusChartData} dataKey="value" nameKey="name" innerRadius={54} outerRadius={80} paddingAngle={4}>
+                    {statusChartData.map((entry) => (
+                      <Cell key={entry.status} fill={STATUS_COLORS[entry.status]} />
+                    ))}
+                  </Pie>
+                  <Tooltip />
+                </PieChart>
+              </ResponsiveContainer>
+
+              <div className="mt-2 flex flex-col gap-2">
                 {statusChartData.map((entry) => (
-                  <Cell key={entry.status} fill={STATUS_COLORS[entry.status]} />
+                  <div key={entry.status} className="flex items-center justify-between text-sm">
+                    <div className="flex items-center gap-2">
+                      <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ background: STATUS_COLORS[entry.status] }} />
+                      <span className="text-[#53657f]">{entry.name}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="font-bold text-[#11233f]">{entry.value}</span>
+                      <span className="w-9 text-right text-xs text-[#9aa9c0]">
+                        {requests.length ? Math.round((entry.value / requests.length) * 100) : 0}%
+                      </span>
+                    </div>
+                  </div>
                 ))}
-              </Pie>
-              <Tooltip />
-            </PieChart>
-          </ResponsiveContainer>
-
-          <div className="mt-2 flex flex-col gap-2">
-            {statusChartData.map((entry) => (
-              <div key={entry.status} className="flex items-center justify-between text-sm">
-                <div className="flex items-center gap-2">
-                  <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ background: STATUS_COLORS[entry.status] }} />
-                  <span className="text-[#53657f]">{entry.name}</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="font-bold text-[#11233f]">{entry.value}</span>
-                  <span className="w-9 text-right text-xs text-[#9aa9c0]">
-                    {requests.length ? Math.round((entry.value / requests.length) * 100) : 0}%
-                  </span>
-                </div>
               </div>
-            ))}
-          </div>
 
-          <div className="mt-5 grid grid-cols-2 gap-3 border-t border-[rgba(15,23,42,0.06)] pt-5">
-            <MiniStat label="Approval rate" value={approvalRate === null ? "—" : `${approvalRate}%`} />
-            <MiniStat label="Total requests" value={requests.length} />
-            <MiniStat label="Total hours" value={stats.totalHours.toFixed(1)} />
-            <MiniStat label="Top department" value={busiestDepartment} />
-          </div>
+              <div className="mt-5 grid grid-cols-2 gap-3 border-t border-[rgba(15,23,42,0.06)] pt-5">
+                <MiniStat label="Approval rate" value={approvalRate === null ? "—" : `${approvalRate}%`} />
+                <MiniStat label="Total requests" value={requests.length} />
+                <MiniStat label="Total hours" value={stats.totalHours.toFixed(1)} />
+                <MiniStat label="Top department" value={busiestDepartment} />
+              </div>
+            </>
+          )}
         </article>
       </section>
 
       <section className="mt-[22px] grid gap-[22px] xl:grid-cols-2">
-        <ChartPanel title="Bookings by department" subtitle="Shows where vehicle demand is coming from.">
+        <ChartPanel title="Bookings by department" subtitle="Shows where vehicle demand is coming from." loading={loading}>
           <ResponsiveContainer width="100%" height={300}>
             <BarChart data={departmentChartData}>
               <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
@@ -390,12 +416,12 @@ function Dashboard() {
           </ResponsiveContainer>
         </ChartPanel>
 
-        <ChartPanel title="Queue workload" subtitle="Compares request count and booked hours for planning.">
+        <ChartPanel title="Queue workload" subtitle="Compares request count and booked hours for planning." loading={loading && staffLoading}>
           <div className="grid gap-4 sm:grid-cols-2">
-            <MiniStat label="Total booking hours" value={stats.totalHours.toFixed(1)} />
-            <MiniStat label="Average duration" value={requests.length ? `${(stats.totalHours / requests.length).toFixed(1)}h` : "0h"} />
-            <MiniStat label="Pending share" value={requests.length ? `${Math.round((stats.pending / requests.length) * 100)}%` : "0%"} />
-            <MiniStat label="Staff coverage" value={staff.length} />
+            <MiniStat label="Total booking hours" loading={loading} value={stats.totalHours.toFixed(1)} />
+            <MiniStat label="Average duration" loading={loading} value={requests.length ? `${(stats.totalHours / requests.length).toFixed(1)}h` : "0h"} />
+            <MiniStat label="Pending share" loading={loading} value={requests.length ? `${Math.round((stats.pending / requests.length) * 100)}%` : "0%"} />
+            <MiniStat label="Staff coverage" loading={staffLoading} value={staff.length} />
           </div>
         </ChartPanel>
       </section>
@@ -489,7 +515,7 @@ function Dashboard() {
   );
 }
 
-function MetricCard({ detail, icon: Icon, label, tone, value }) {
+function MetricCard({ detail, icon: Icon, label, loading = false, tone, value }) {
   const toneStyles = {
     amber: { bg: "bg-amber-500", text: "text-amber-500", border: "border-amber-500/30" },
     blue: { bg: "bg-blue-500", text: "text-blue-500", border: "border-blue-500/30" },
@@ -507,32 +533,49 @@ function MetricCard({ detail, icon: Icon, label, tone, value }) {
         </div>
       </div>
       <div className="mt-4">
-        <h3 className="text-4xl font-bold leading-none text-slate-800">{value}</h3>
-        <p className="mt-2 text-xs text-slate-500">{detail}</p>
+        {loading ? (
+          <Spinner size={26} />
+        ) : (
+          <h3 className="text-4xl font-bold leading-none text-slate-800">{value}</h3>
+        )}
+        <p className="mt-2 text-xs text-slate-500">{loading ? "Loading..." : detail}</p>
       </div>
     </article>
   );
 }
 
-function ChartPanel({ children, subtitle, title }) {
+function ChartPanel({ children, loading = false, subtitle, title }) {
   return (
     <article className="rounded-[28px] border border-slate-200 bg-white p-6">
       <div className="mb-5">
         <h2 className="text-[1.4rem] font-bold text-[#11233f]">{title}</h2>
         <p className="mt-1 text-sm text-[#7b8ba5]">{subtitle}</p>
       </div>
-      {children}
+      {loading ? (
+        <div className="flex min-h-[220px] flex-col items-center justify-center gap-3 text-slate-500">
+          <Spinner />
+          <span className="text-sm font-medium">Loading analytics...</span>
+        </div>
+      ) : (
+        children
+      )}
     </article>
   );
 }
 
-function MiniStat({ label, value }) {
+function MiniStat({ label, loading = false, value }) {
   return (
     <div className="rounded-[22px] border border-[rgba(17,74,157,0.08)] bg-gradient-to-b from-[#f9fbff] to-[#f2f6fb] p-[18px]">
       <span className="text-xs font-bold uppercase tracking-[0.14em] text-[#6d7d96]">{label}</span>
-      <strong className="mt-2 block truncate text-xl text-[#11233f]" title={typeof value === "string" ? value : undefined}>
-        {value}
-      </strong>
+      {loading ? (
+        <div className="mt-2">
+          <Spinner size={18} />
+        </div>
+      ) : (
+        <strong className="mt-2 block truncate text-xl text-[#11233f]" title={typeof value === "string" ? value : undefined}>
+          {value}
+        </strong>
+      )}
     </div>
   );
 }

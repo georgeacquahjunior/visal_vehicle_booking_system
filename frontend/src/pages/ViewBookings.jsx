@@ -23,6 +23,7 @@ import { isPastBooking } from "../utils/approvals.js";
 import InfoButton from "../components/InfoButton";
 import Modal from "../components/Modal";
 import Pagination from "../components/Pagination";
+import Spinner from "../components/Spinner";
 import useGreeting from "../hooks/useGreeting.js";
 import { showToast } from "../utils/toast.js";
 
@@ -168,20 +169,24 @@ function ViewBookings() {
             <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-blue-700">
               <Clock3 size={18} />
             </div>
-            <p className="m-0 text-[15px] text-[#11233f]">
-              <strong className="font-bold">{statusCounts.pending} pending</strong>
-              <span className="text-[#7b8ba5]"> · {statusCounts.all} total requests</span>
-            </p>
+            {loading ? (
+              <Spinner size={18} />
+            ) : (
+              <p className="m-0 text-[15px] text-[#11233f]">
+                <strong className="font-bold">{statusCounts.pending} pending</strong>
+                <span className="text-[#7b8ba5]"> · {statusCounts.all} total requests</span>
+              </p>
+            )}
           </div>
         </div>
       </section>
 
       <section className="mt-5 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-5">
-        <MetricCard icon={ListChecks} label="Total requests" value={statusCounts.all} tone="blue" />
-        <MetricCard icon={CheckCircle2} label="Approved" value={statusCounts.approved} tone="green" />
-        <MetricCard icon={Clock3} label="Pending" value={statusCounts.pending} tone="amber" />
-        <MetricCard icon={XCircle} label="Declined" value={statusCounts.declined} tone="red" />
-        <MetricCard icon={Ban} label="Cancelled" value={statusCounts.cancelled} tone="slate" />
+        <MetricCard icon={ListChecks} label="Total requests" loading={loading} value={statusCounts.all} tone="blue" />
+        <MetricCard icon={CheckCircle2} label="Approved" loading={loading} value={statusCounts.approved} tone="green" />
+        <MetricCard icon={Clock3} label="Pending" loading={loading} value={statusCounts.pending} tone="amber" />
+        <MetricCard icon={XCircle} label="Declined" loading={loading} value={statusCounts.declined} tone="red" />
+        <MetricCard icon={Ban} label="Cancelled" loading={loading} value={statusCounts.cancelled} tone="slate" />
       </section>
 
       <section className="mt-5 rounded-3xl border border-slate-200 bg-white p-6">
@@ -244,7 +249,12 @@ function ViewBookings() {
         </div>
 
         {loading ? (
-          <PanelState>Loading bookings...</PanelState>
+          <PanelState>
+            <div className="flex flex-col items-center gap-3">
+              <Spinner />
+              <span>Loading bookings...</span>
+            </div>
+          </PanelState>
         ) : error ? (
           <PanelState error>{error}</PanelState>
         ) : filteredBookings.length === 0 ? (
@@ -498,7 +508,7 @@ function ViewBookings() {
   );
 }
 
-function MetricCard({ icon: Icon, label, tone, value }) {
+function MetricCard({ icon: Icon, label, loading = false, tone, value }) {
   const toneStyles = {
     amber: { bg: "bg-amber-500", border: "border-amber-500/30" },
     blue: { bg: "bg-blue-500", border: "border-blue-500/30" },
@@ -514,7 +524,7 @@ function MetricCard({ icon: Icon, label, tone, value }) {
         <Icon size={20} />
       </div>
       <div>
-        <h3 className="m-0 text-2xl font-bold leading-none text-slate-800">{value}</h3>
+        {loading ? <Spinner size={22} /> : <h3 className="m-0 text-2xl font-bold leading-none text-slate-800">{value}</h3>}
         <p className="m-0 mt-1.5 text-xs font-bold uppercase tracking-wider text-slate-500">{label}</p>
       </div>
     </article>

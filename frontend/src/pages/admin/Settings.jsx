@@ -9,6 +9,7 @@ import {
   ShieldCheck,
 } from "lucide-react";
 import InfoButton from "../../components/InfoButton";
+import Spinner from "../../components/Spinner";
 import { useSettings } from "../../hooks/useSettings.js";
 import { updateSettings } from "../../utils/settings.js";
 import { showToast } from "../../utils/toast.js";
@@ -59,8 +60,9 @@ function Settings() {
       </div>
 
       {loading ? (
-        <div className="mt-5 flex min-h-[220px] items-center justify-center rounded-3xl border border-slate-200 bg-white text-sm font-medium text-slate-500">
-          Loading settings...
+        <div className="mt-5 flex min-h-[220px] flex-col items-center justify-center gap-3 rounded-3xl border border-slate-200 bg-white text-sm font-medium text-slate-500">
+          <Spinner />
+          <span>Loading settings...</span>
         </div>
       ) : (
         <div className="mt-5">

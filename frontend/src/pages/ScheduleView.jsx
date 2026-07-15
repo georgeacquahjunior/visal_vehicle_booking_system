@@ -21,6 +21,7 @@ import { colorForName } from "../utils/avatar.js";
 import InfoButton from "../components/InfoButton";
 import Modal from "../components/Modal";
 import Pagination from "../components/Pagination";
+import Spinner from "../components/Spinner";
 import useGreeting from "../hooks/useGreeting.js";
 import { useSettings } from "../hooks/useSettings.js";
 
@@ -435,8 +436,9 @@ function ScheduleView() {
 
       <section className="mt-5">
         {loading ? (
-          <div className="flex min-h-[320px] items-center justify-center rounded-3xl border border-slate-200 bg-white text-sm font-medium text-slate-500">
-            Loading schedule...
+          <div className="flex min-h-[320px] flex-col items-center justify-center gap-3 rounded-3xl border border-slate-200 bg-white text-sm font-medium text-slate-500">
+            <Spinner />
+            <span>Loading schedule...</span>
           </div>
         ) : (
           <>

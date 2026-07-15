@@ -89,6 +89,7 @@ def send_broadcast_email():
     audience = str(data.get("audience", "")).strip().lower()
     target_staff_id = str(data.get("target_staff_id", "")).strip()
     sender_email = str(data.get("sender", "")).strip()
+    content_format = str(data.get("format", "html")).strip().lower()
 
     if not subject or not html_body:
         return jsonify({"error": "subject and html_body are required"}), 400
@@ -98,6 +99,8 @@ def send_broadcast_email():
         return jsonify({"error": "html_body must be 50000 characters or fewer"}), 400
     if audience not in VALID_AUDIENCES:
         return jsonify({"error": f"audience must be one of: {', '.join(sorted(VALID_AUDIENCES))}"}), 400
+    if content_format not in ("html", "text"):
+        return jsonify({"error": "format must be 'html' or 'text'"}), 400
 
     if sender_email:
         allowed_senders = {s["email"] for s in _parse_senders()}
@@ -134,15 +137,23 @@ def send_broadcast_email():
     for user in recipients:
         try:
             rendered_subject = _render(subject, user)
-            rendered_html = _render(html_body, user)
-            plain_text = _strip_tags(rendered_html) or rendered_subject
-            msg = Message(
-                subject=rendered_subject,
-                recipients=[user.email],
-                body=plain_text,
-                html=rendered_html,
-                sender=sender_email,
-            )
+            rendered_body = _render(html_body, user)
+            if content_format == "text":
+                msg = Message(
+                    subject=rendered_subject,
+                    recipients=[user.email],
+                    body=rendered_body,
+                    sender=sender_email,
+                )
+            else:
+                plain_text = _strip_tags(rendered_body) or rendered_subject
+                msg = Message(
+                    subject=rendered_subject,
+                    recipients=[user.email],
+                    body=plain_text,
+                    html=rendered_body,
+                    sender=sender_email,
+                )
             mail.send(msg)
             sent += 1
         except Exception as exc:

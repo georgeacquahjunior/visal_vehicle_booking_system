@@ -3,6 +3,7 @@ import { Bell, BellOff, CheckCheck, CheckCircle2, Clock3, MessageSquareReply, Se
 import { fetchNotifications, markAllNotificationsRead, markNotificationRead } from "../../utils/notifications.js";
 import InfoButton from "../../components/InfoButton";
 import Pagination from "../../components/Pagination";
+import Spinner from "../../components/Spinner";
 import useGreeting from "../../hooks/useGreeting.js";
 import { showToast } from "../../utils/toast.js";
 
@@ -128,8 +129,9 @@ function Notifications() {
         </div>
 
         {loading ? (
-          <div className="flex min-h-[220px] items-center justify-center rounded-2xl bg-gradient-to-b from-slate-50 to-blue-50 p-5 text-center text-slate-600">
-            Loading notifications...
+          <div className="flex min-h-[220px] flex-col items-center justify-center gap-3 rounded-2xl bg-gradient-to-b from-slate-50 to-blue-50 p-5 text-center text-slate-600">
+            <Spinner />
+            <span>Loading notifications...</span>
           </div>
         ) : error ? (
           <div className="flex min-h-[220px] items-center justify-center rounded-2xl bg-rose-50 p-5 text-center text-rose-700">{error}</div>

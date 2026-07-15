@@ -5,6 +5,7 @@ import { colorForName } from "../../utils/avatar.js";
 import InfoButton from "../../components/InfoButton";
 import Modal from "../../components/Modal";
 import Pagination from "../../components/Pagination";
+import Spinner from "../../components/Spinner";
 import useGreeting from "../../hooks/useGreeting.js";
 import { showToast } from "../../utils/toast.js";
 
@@ -108,10 +109,14 @@ function Support() {
             <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-blue-700">
               <Clock3 size={18} />
             </div>
-            <p className="m-0 text-[15px] text-[#11233f]">
-              <strong className="font-bold">{openCount} open</strong>
-              <span className="text-[#7b8ba5]"> · {total} total message{total === 1 ? "" : "s"}</span>
-            </p>
+            {loading ? (
+              <Spinner size={18} />
+            ) : (
+              <p className="m-0 text-[15px] text-[#11233f]">
+                <strong className="font-bold">{openCount} open</strong>
+                <span className="text-[#7b8ba5]"> · {total} total message{total === 1 ? "" : "s"}</span>
+              </p>
+            )}
           </div>
         </div>
       </section>
@@ -130,7 +135,12 @@ function Support() {
         </div>
 
         {loading ? (
-          <PanelState>Loading messages...</PanelState>
+          <PanelState>
+            <div className="flex flex-col items-center gap-3">
+              <Spinner />
+              <span>Loading messages...</span>
+            </div>
+          </PanelState>
         ) : error ? (
           <PanelState error>{error}</PanelState>
         ) : messages.length === 0 ? (

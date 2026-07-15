@@ -16,6 +16,7 @@ import { updateStaffDetails, updateStaffStatus } from "../../utils/staff.js";
 import InfoButton from "../../components/InfoButton";
 import Modal from "../../components/Modal";
 import Pagination from "../../components/Pagination";
+import Spinner from "../../components/Spinner";
 import useGreeting from "../../hooks/useGreeting.js";
 import { showToast } from "../../utils/toast.js";
 
@@ -233,8 +234,9 @@ function StaffMembers() {
         </div>
 
         {loading ? (
-          <div className="flex min-h-[220px] items-center justify-center rounded-[22px] bg-gradient-to-b from-slate-50 to-blue-50 p-5 text-center text-slate-600">
-            Loading staff members...
+          <div className="flex min-h-[220px] flex-col items-center justify-center gap-3 rounded-[22px] bg-gradient-to-b from-slate-50 to-blue-50 p-5 text-center text-slate-600">
+            <Spinner />
+            <span>Loading staff members...</span>
           </div>
         ) : error ? (
           <div className="flex min-h-[220px] items-center justify-center rounded-[22px] bg-rose-50 p-5 text-center text-rose-700">

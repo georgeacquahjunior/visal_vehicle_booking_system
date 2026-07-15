@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { fetchNotifications, markNotificationRead, markAllNotificationsRead } from '../utils/notifications';
+import Spinner from './Spinner';
 
 const TYPE_INDICATOR_CLASS = {
   approved: 'bg-emerald-500',
@@ -13,6 +14,7 @@ const TYPE_INDICATOR_CLASS = {
 
 function NotificationBell() {
   const [notifications, setNotifications] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [open, setOpen] = useState(false);
   const dropdownRef = useRef(null);
 
@@ -20,15 +22,20 @@ function NotificationBell() {
     // load on mount, only if we have a token
     if (localStorage.getItem('access_token')) {
       load();
+    } else {
+      setLoading(false);
     }
   }, []);
 
   const load = async () => {
+    setLoading(true);
     try {
       const data = await fetchNotifications();
       setNotifications(data);
     } catch (err) {
       console.warn('failed to load notifications', err);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -101,14 +108,21 @@ function NotificationBell() {
           </div>
 
           <div className="max-h-[380px] overflow-y-auto">
-            {notifications.length === 0 && (
+            {loading && (
+              <div className="flex flex-col items-center gap-2 px-5 py-10 text-center text-gray-400">
+                <Spinner size={22} />
+                <p className="m-0 text-[0.9rem] font-medium">Loading...</p>
+              </div>
+            )}
+
+            {!loading && notifications.length === 0 && (
               <div className="px-5 py-10 text-center text-gray-400">
                 <i className="fas fa-bell-slash mb-3 block text-[2rem] text-gray-300"></i>
                 <p className="m-0 text-[0.9rem] font-medium">No notifications yet</p>
               </div>
             )}
 
-            {notifications.map((n) => {
+            {!loading && notifications.map((n) => {
               const type = n.type || 'info';
               return (
                 <div

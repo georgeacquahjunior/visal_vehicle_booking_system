@@ -21,6 +21,7 @@ import { fetchAuditLog } from "../../utils/auditLog.js";
 import { colorForName } from "../../utils/avatar.js";
 import InfoButton from "../../components/InfoButton";
 import Pagination from "../../components/Pagination";
+import Spinner from "../../components/Spinner";
 import useGreeting from "../../hooks/useGreeting.js";
 
 const PAGE_SIZE = 10;
@@ -179,8 +180,9 @@ function AuditLog() {
         </div>
 
         {loading ? (
-          <div className="flex min-h-[220px] items-center justify-center rounded-[22px] bg-gradient-to-b from-slate-50 to-blue-50 p-5 text-center text-slate-600">
-            Loading audit log...
+          <div className="flex min-h-[220px] flex-col items-center justify-center gap-3 rounded-[22px] bg-gradient-to-b from-slate-50 to-blue-50 p-5 text-center text-slate-600">
+            <Spinner />
+            <span>Loading audit log...</span>
           </div>
         ) : error ? (
           <div className="flex min-h-[220px] items-center justify-center rounded-[22px] bg-rose-50 p-5 text-center text-rose-700">

@@ -4,6 +4,7 @@ import { fetchBroadcastSenders, sendBroadcastEmail } from "../../utils/broadcast
 import { API_BASE_URL } from "../../config.js";
 import InfoButton from "../../components/InfoButton";
 import Modal from "../../components/Modal";
+import Spinner from "../../components/Spinner";
 import useGreeting from "../../hooks/useGreeting.js";
 import { showToast } from "../../utils/toast.js";
 
@@ -47,8 +48,14 @@ function renderPreview(text, user) {
   return rendered;
 }
 
+const SITE_URL = "https://book-beta.vaarde.com";
+
+const CTA_BUTTON = `<div style="text-align:center;margin:28px 0 8px;">
+      <a href="${SITE_URL}" style="display:inline-block;background:#1469e1;color:#ffffff;font-size:14px;font-weight:700;text-decoration:none;padding:12px 30px;border-radius:10px;">Open the portal</a>
+    </div>`;
+
 const TEMPLATES = [
-  { id: "blank", label: "Blank", subject: "", html: "" },
+  { id: "blank", label: "Blank", subject: "", html: "", format: "html" },
   {
     id: "maintenance",
     label: "Scheduled maintenance",
@@ -67,6 +74,74 @@ const TEMPLATES = [
     subject: "Welcome to the Vehicle Booking Portal",
     html: "<p>Hi {{first_name}},</p>\n<p>Welcome aboard! You can now book vehicles, track approvals, and manage your account from the portal.</p>\n<p>Your staff ID is <strong>{{staff_id}}</strong>.</p>",
   },
+  {
+    id: "system_update",
+    label: "System update (admin + requester)",
+    subject: "What's new on the Vehicle Booking Portal",
+    html: `<div style="max-width:600px;margin:0 auto;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-serif;color:#11233f;">
+  <div style="background:linear-gradient(135deg,#1469e1,#11233f);border-radius:16px 16px 0 0;padding:32px 28px;text-align:center;">
+    <h1 style="margin:0;color:#ffffff;font-size:22px;font-weight:700;">What's new on the Vehicle Booking Portal</h1>
+    <p style="margin:8px 0 0;color:rgba(255,255,255,0.85);font-size:13px;">A round-up of everything we've shipped recently</p>
+  </div>
+
+  <div style="background:#ffffff;border:1px solid #e2e8f0;border-top:none;border-radius:0 0 16px 16px;padding:28px;">
+    <p style="margin:0 0 20px;font-size:14px;line-height:1.6;">Hi {{first_name}},</p>
+    <p style="margin:0 0 24px;font-size:14px;line-height:1.6;color:#475569;">We've rolled out a set of updates across both the admin and requester dashboards. Here's what's changed:</p>
+
+    <h2 style="margin:0 0 12px;font-size:15px;font-weight:700;color:#1469e1;text-transform:uppercase;letter-spacing:0.04em;">Admin dashboard</h2>
+    <div style="margin:0 0 24px;">
+      <p style="margin:0 0 10px;font-size:14px;line-height:1.5;"><strong>Settings</strong> &mdash; configure booking rules, schedule defaults, notifications, audit retention, approval workflow, and branding in one place.</p>
+      <p style="margin:0 0 10px;font-size:14px;line-height:1.5;"><strong>Audit Log</strong> &mdash; a redesigned, searchable trail of every action taken across the system.</p>
+      <p style="margin:0 0 10px;font-size:14px;line-height:1.5;"><strong>Support inbox</strong> &mdash; view, reply to, and resolve messages sent in from staff.</p>
+      <p style="margin:0 0 10px;font-size:14px;line-height:1.5;"><strong>Broadcast Email</strong> &mdash; send announcements like this one to all users, requesters only, admins only, or a specific person, with reusable templates and per-recipient variables.</p>
+      <p style="margin:0;font-size:14px;line-height:1.5;"><strong>Staff management</strong> &mdash; staff IDs can now be edited directly, with related records updating automatically.</p>
+    </div>
+
+    <h2 style="margin:0 0 12px;font-size:15px;font-weight:700;color:#1469e1;text-transform:uppercase;letter-spacing:0.04em;">Requester dashboard</h2>
+    <div style="margin:0 0 24px;">
+      <p style="margin:0 0 10px;font-size:14px;line-height:1.5;"><strong>Booking flow</strong> &mdash; a redesigned New Booking page with helper tooltips on every field.</p>
+      <p style="margin:0 0 10px;font-size:14px;line-height:1.5;"><strong>My Bookings</strong> &mdash; filter and search your booking history, cancel a future booking, and view full details including decline reasons.</p>
+      <p style="margin:0 0 10px;font-size:14px;line-height:1.5;"><strong>My Account</strong> &mdash; update your name and phone number, and see your staff ID, email, department, and role.</p>
+      <p style="margin:0 0 10px;font-size:14px;line-height:1.5;"><strong>Notifications</strong> &mdash; a dedicated page listing every notification, with links straight to the relevant booking or message.</p>
+      <p style="margin:0;font-size:14px;line-height:1.5;"><strong>Navigation</strong> &mdash; switch between a sidebar or bottom navigation bar, whichever you prefer.</p>
+    </div>
+    ${CTA_BUTTON}
+
+    <p style="margin:24px 0 0;font-size:13px;line-height:1.6;color:#7b8ba5;">Questions or issues? Reach out through Help &amp; Support from the dashboard.</p>
+  </div>
+
+  <p style="text-align:center;font-size:11px;color:#94a3b8;margin:16px 0 0;">Vehicle Booking Portal &middot; Vaarde Consulting Ltd</p>
+</div>`,
+  },
+  {
+    id: "requester_update",
+    label: "Requester dashboard update",
+    subject: "What's new for you on the Vehicle Booking Portal",
+    html: `<div style="max-width:600px;margin:0 auto;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-serif;color:#11233f;">
+  <div style="background:linear-gradient(135deg,#1469e1,#11233f);border-radius:16px 16px 0 0;padding:32px 28px;text-align:center;">
+    <h1 style="margin:0;color:#ffffff;font-size:22px;font-weight:700;">Your dashboard just got an upgrade</h1>
+    <p style="margin:8px 0 0;color:rgba(255,255,255,0.85);font-size:13px;">Here's what's new for you</p>
+  </div>
+
+  <div style="background:#ffffff;border:1px solid #e2e8f0;border-top:none;border-radius:0 0 16px 16px;padding:28px;">
+    <p style="margin:0 0 20px;font-size:14px;line-height:1.6;">Hi {{first_name}},</p>
+    <p style="margin:0 0 24px;font-size:14px;line-height:1.6;color:#475569;">We've made a number of improvements to your dashboard to make booking a vehicle quicker and easier. Here's what's changed:</p>
+
+    <div style="margin:0 0 8px;">
+      <p style="margin:0 0 10px;font-size:14px;line-height:1.5;"><strong>Booking flow</strong> &mdash; a redesigned New Booking page with helper tooltips on every field, so it's clearer what each one means.</p>
+      <p style="margin:0 0 10px;font-size:14px;line-height:1.5;"><strong>My Bookings</strong> &mdash; filter and search your booking history, cancel a future booking yourself, and view full details for any booking, including the reason if it was declined.</p>
+      <p style="margin:0 0 10px;font-size:14px;line-height:1.5;"><strong>My Account</strong> &mdash; update your name and phone number anytime, and see your staff ID, email, department, and role at a glance.</p>
+      <p style="margin:0 0 10px;font-size:14px;line-height:1.5;"><strong>Notifications</strong> &mdash; a dedicated page listing every notification you've received, with a link straight to the relevant booking.</p>
+      <p style="margin:0;font-size:14px;line-height:1.5;"><strong>Navigation</strong> &mdash; choose between a sidebar or a bottom navigation bar, whichever you find easier to use.</p>
+    </div>
+    ${CTA_BUTTON}
+
+    <p style="margin:24px 0 0;font-size:13px;line-height:1.6;color:#7b8ba5;">Questions or issues? Reach out through Help &amp; Support from your dashboard.</p>
+  </div>
+
+  <p style="text-align:center;font-size:11px;color:#94a3b8;margin:16px 0 0;">Vehicle Booking Portal &middot; Vaarde Consulting Ltd</p>
+</div>`,
+  },
 ];
 
 function Broadcast() {
@@ -82,6 +157,7 @@ function Broadcast() {
   const [audience, setAudience] = useState("all");
   const [targetStaffId, setTargetStaffId] = useState("");
   const [template, setTemplate] = useState("blank");
+  const [format, setFormat] = useState("html");
   const [subject, setSubject] = useState("");
   const [htmlBody, setHtmlBody] = useState("");
   const [confirmOpen, setConfirmOpen] = useState(false);
@@ -152,6 +228,7 @@ function Broadcast() {
     if (!found) return;
     setSubject(found.subject);
     setHtmlBody(found.html);
+    setFormat(found.format || "html");
   };
 
   const insertVariable = (token) => {
@@ -198,12 +275,14 @@ function Broadcast() {
         audience,
         target_staff_id: audience === "user" ? targetStaffId : undefined,
         sender: selectedSender || undefined,
+        format,
       });
       showToast(`Email sent to ${result.sent} recipient${result.sent === 1 ? "" : "s"}.`, "success");
       setConfirmOpen(false);
       setSubject("");
       setHtmlBody("");
       setTemplate("blank");
+      setFormat("html");
     } catch (err) {
       showToast(err.message || "Failed to send broadcast email.", "error");
     } finally {
@@ -224,6 +303,7 @@ function Broadcast() {
         html_body: htmlBody,
         audience: "self",
         sender: selectedSender || undefined,
+        format,
       });
       showToast("Test email sent to your own inbox.", "success");
     } catch (err) {
@@ -257,10 +337,14 @@ function Broadcast() {
             <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-blue-700">
               <Users size={18} />
             </div>
-            <p className="m-0 text-[15px] text-[#11233f]">
-              <strong className="font-bold">{loadingUsers ? "..." : recipientCount}</strong>
-              <span className="text-[#7b8ba5]"> recipient{recipientCount === 1 ? "" : "s"} · {audienceLabel}</span>
-            </p>
+            {loadingUsers ? (
+              <Spinner size={18} />
+            ) : (
+              <p className="m-0 text-[15px] text-[#11233f]">
+                <strong className="font-bold">{recipientCount}</strong>
+                <span className="text-[#7b8ba5]"> recipient{recipientCount === 1 ? "" : "s"} · {audienceLabel}</span>
+              </p>
+            )}
           </div>
         </div>
       </section>
@@ -294,11 +378,12 @@ function Broadcast() {
               <label className="block">
                 <span className="mb-2 block text-sm font-bold text-[#11233f]">Recipient</span>
                 <select
-                  className="w-full rounded-xl border border-slate-200 bg-white p-3 text-sm text-[#11233f] outline-none focus:border-[#1469e1]"
+                  className="w-full rounded-xl border border-slate-200 bg-white p-3 text-sm text-[#11233f] outline-none focus:border-[#1469e1] disabled:cursor-not-allowed disabled:opacity-60"
                   value={targetStaffId}
                   onChange={(event) => setTargetStaffId(event.target.value)}
+                  disabled={loadingUsers}
                 >
-                  <option value="">Select a user...</option>
+                  <option value="">{loadingUsers ? "Loading users..." : "Select a user..."}</option>
                   {activeUsers.map((user) => (
                     <option key={user.staff_id} value={user.staff_id}>
                       {user.full_name} ({user.staff_id}) — {user.role}
@@ -358,7 +443,29 @@ function Broadcast() {
             </label>
 
             <div>
-              <span className="mb-2 block text-sm font-bold text-[#11233f]">HTML content</span>
+              <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+                <span className="block text-sm font-bold text-[#11233f]">{format === "html" ? "HTML content" : "Plain text content"}</span>
+                <div className="flex shrink-0 rounded-full border border-slate-200 bg-slate-50 p-1">
+                  <button
+                    type="button"
+                    onClick={() => setFormat("html")}
+                    className={`rounded-full px-3 py-1 text-[11px] font-bold transition-colors ${
+                      format === "html" ? "bg-[#1469e1] text-white" : "text-slate-500 hover:text-[#1469e1]"
+                    }`}
+                  >
+                    HTML
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setFormat("text")}
+                    className={`rounded-full px-3 py-1 text-[11px] font-bold transition-colors ${
+                      format === "text" ? "bg-[#1469e1] text-white" : "text-slate-500 hover:text-[#1469e1]"
+                    }`}
+                  >
+                    Plain text
+                  </button>
+                </div>
+              </div>
               <div className="mb-2 flex flex-wrap gap-1.5">
                 {VARIABLES.map((variable) => (
                   <button
@@ -375,14 +482,18 @@ function Broadcast() {
               <textarea
                 ref={htmlRef}
                 required
-                className="min-h-[280px] w-full rounded-xl border border-slate-200 bg-white p-3 font-mono text-xs text-[#11233f] outline-none focus:border-[#1469e1]"
+                className={`min-h-[280px] w-full rounded-xl border border-slate-200 bg-white p-3 text-xs text-[#11233f] outline-none focus:border-[#1469e1] ${
+                  format === "html" ? "font-mono" : ""
+                }`}
                 value={htmlBody}
                 onChange={(event) => setHtmlBody(event.target.value)}
-                placeholder="<p>Write your email in HTML...</p>"
+                placeholder={format === "html" ? "<p>Write your email in HTML...</p>" : "Write your email as plain text..."}
               />
               <span className="mt-1.5 block text-xs text-slate-400">
-                Write raw HTML — the preview on the right updates as you type. Variables like <code>{"{{full_name}}"}</code> are filled in per recipient when the email
-                sends.
+                {format === "html"
+                  ? "Write raw HTML — the preview on the right updates as you type."
+                  : "This sends as a plain-text email, exactly as typed — no HTML tags."}{" "}
+                Variables like <code>{"{{full_name}}"}</code> are filled in per recipient either way.
               </span>
             </div>
 
@@ -427,10 +538,14 @@ function Broadcast() {
                 {subject.trim() && (
                   <div className="border-b border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-[#11233f]">{previewSubject}</div>
                 )}
-                <iframe title="Email preview" srcDoc={previewHtml} sandbox="" className="h-[360px] w-full bg-white" />
+                {format === "html" ? (
+                  <iframe title="Email preview" srcDoc={previewHtml} sandbox="" className="h-[360px] w-full bg-white" />
+                ) : (
+                  <pre className="h-[360px] w-full overflow-auto whitespace-pre-wrap break-words bg-white p-4 font-sans text-sm text-[#11233f]">{previewHtml}</pre>
+                )}
               </>
             ) : (
-              <div className="flex h-[400px] items-center justify-center text-sm text-slate-400">Your HTML preview will appear here.</div>
+              <div className="flex h-[400px] items-center justify-center text-sm text-slate-400">Your {format === "html" ? "HTML" : "text"} preview will appear here.</div>
             )}
           </div>
         </section>
