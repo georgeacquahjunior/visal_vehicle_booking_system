@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
-import { Users } from "lucide-react";
+import { ChevronDown, User, Users } from "lucide-react";
 import { fetchOnlineUsers, startHeartbeat } from "../utils/presence.js";
 import { colorForName, letterFor } from "../utils/avatar.js";
 
@@ -59,15 +59,22 @@ function OnlineUsers() {
     <div className="relative inline-block" ref={dropdownRef}>
       <button
         type="button"
-        className="inline-flex items-center gap-2.5 rounded-full border border-[rgba(15,23,42,0.08)] bg-white px-4 py-2.5 pl-3.5 transition-colors hover:bg-slate-50 hover:-translate-y-px"
+        className="inline-flex items-center gap-2.5 rounded-full border border-slate-200 bg-white px-4 py-2.5 pl-3.5 transition-colors hover:bg-slate-50 hover:-translate-y-px"
         onClick={() => setOpen((prev) => !prev)}
         aria-label={`${users.length} people online`}
       >
-        <span className="relative inline-flex h-2.5 w-2.5 items-center justify-center">
-          <span className="absolute inset-0 animate-ping rounded-full bg-emerald-500 opacity-65" />
-          <span className="relative h-[9px] w-[9px] rounded-full bg-emerald-500 shadow-[0_0_0_2px_rgba(34,197,94,0.16)]" />
+        <span className="relative flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-slate-100 text-slate-500">
+          <User size={13} />
+          <span className="absolute -bottom-px -right-px flex h-2.5 w-2.5 items-center justify-center">
+            <span className="absolute inset-0 animate-ping rounded-full bg-emerald-500 opacity-65" />
+            <span className="relative h-[9px] w-[9px] rounded-full bg-emerald-500 shadow-[0_0_0_2px_rgba(255,255,255,0.9)]" />
+          </span>
         </span>
-        <span className="whitespace-nowrap text-[12.5px] font-bold text-gray-700 max-[640px]:hidden">{users.length} online</span>
+        <span className="whitespace-nowrap text-[12.5px] font-bold text-gray-700 max-[640px]:hidden">{users.length} </span>
+        <ChevronDown
+          size={18}
+          className={`text-gray-400 transition-transform duration-200 ${open ? "rotate-180" : ""}`}
+        />
       </button>
 
       {open && (

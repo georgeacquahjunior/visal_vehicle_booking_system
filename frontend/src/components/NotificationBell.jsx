@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { Link } from 'react-router-dom';
 import { fetchNotifications, markNotificationRead, markAllNotificationsRead } from '../utils/notifications';
 
 const TYPE_INDICATOR_CLASS = {
@@ -6,6 +7,7 @@ const TYPE_INDICATOR_CLASS = {
   declined: 'bg-red-500',
   submitted: 'bg-blue-500',
   cancelled: 'bg-amber-500',
+  support_update: 'bg-purple-500',
   info: 'bg-gray-500',
 };
 
@@ -73,7 +75,7 @@ function NotificationBell() {
 
   return (
     <div className="relative inline-block" ref={dropdownRef}>
-      <button className="relative rounded-lg p-2 text-[1.4rem] text-gray-500 transition-all hover:bg-black/5 hover:text-gray-700" onClick={handleToggle} aria-label="Notifications">
+      <button className="relative flex h-11 w-11 items-center justify-center rounded-[14px] border border-slate-200 bg-white text-[1.1rem] text-[#0f4aa1] shadow-sm transition-all duration-200 hover:-translate-y-px hover:bg-slate-50" onClick={handleToggle} aria-label="Notifications">
         <i className="fas fa-bell"></i>
         {unreadCount > 0 && (
           <span className="absolute right-1 top-1 flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-red-500 px-1.5 text-[0.65rem] font-semibold text-white shadow-[0_2px_4px_rgba(0,0,0,0.1)]">
@@ -129,6 +131,14 @@ function NotificationBell() {
               );
             })}
           </div>
+
+          <Link
+            to={localStorage.getItem('role') === 'admin' ? '/admin-dashboard/notifications' : '/booking/notifications'}
+            onClick={() => setOpen(false)}
+            className="flex items-center justify-center border-t border-gray-100 bg-gray-50 px-5 py-3 text-[0.8rem] font-semibold text-blue-600 no-underline transition-colors hover:bg-gray-100"
+          >
+            View all notifications
+          </Link>
         </div>
       )}
     </div>

@@ -18,7 +18,7 @@ class Changelog(db.Model):
     )  # e.g., "Feature", "Bug Fix", "Improvement", "General"
     author_id = db.Column(
         db.String(20),
-        db.ForeignKey("users.staff_id", ondelete="SET NULL"),
+        db.ForeignKey("users.staff_id", ondelete="SET NULL", onupdate="CASCADE"),
         nullable=True
     )
     created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)

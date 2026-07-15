@@ -7,7 +7,7 @@ class Notification(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(
         db.String(20),
-        db.ForeignKey("users.staff_id", ondelete="CASCADE"),
+        db.ForeignKey("users.staff_id", ondelete="CASCADE", onupdate="CASCADE"),
         nullable=False
     )
     title = db.Column(db.String(150))  

@@ -22,6 +22,7 @@ class User(db.Model):
     phone_number = db.Column(db.String(20))
     department = db.Column(db.String(50))
     role = db.Column(db.String(20), nullable=False, default=Roles.STAFF)
+    status = db.Column(db.String(20), nullable=False, default="active")
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     last_active = db.Column(db.DateTime, nullable=True)
 

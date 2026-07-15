@@ -3,6 +3,8 @@ import { Link } from "react-router-dom";
 import {
   AlertCircle,
   CalendarClock,
+  Check,
+  CheckCircle,
   CheckCircle2,
   Clock3,
   ShieldCheck,
@@ -22,7 +24,13 @@ import {
   YAxis,
 } from "recharts";
 import { API_BASE_URL } from "../../config.js";
-import { approveBookingAPI, declineBookingAPI } from "../../utils/approvals.js";
+import { approveBookingAPI, declineBookingAPI, isPastBooking } from "../../utils/approvals.js";
+import { colorForName } from "../../utils/avatar.js";
+import InfoButton from "../../components/InfoButton";
+import Modal from "../../components/Modal";
+import useGreeting from "../../hooks/useGreeting.js";
+import { useSettings } from "../../hooks/useSettings.js";
+import { showToast } from "../../utils/toast.js";
 
 const PENDING_PREVIEW_LIMIT = 5;
 
@@ -40,7 +48,7 @@ function Dashboard() {
   const [staffError, setStaffError] = useState(null);
   const [processingId, setProcessingId] = useState(null);
   const [actionError, setActionError] = useState("");
-  const [successMessage, setSuccessMessage] = useState("");
+  const [approveTarget, setApproveTarget] = useState(null);
   const [declineTarget, setDeclineTarget] = useState(null);
   const [declineReason, setDeclineReason] = useState("");
 
@@ -130,17 +138,26 @@ function Dashboard() {
   const pendingPreview = pendingRequests.slice(0, PENDING_PREVIEW_LIMIT);
   const nextRequest = requests.find((request) => request.status === "pending") || requests[0] || null;
 
-  const handleApprove = async (request) => {
-    setProcessingId(request.id);
+  const openApproveDialog = (request) => {
+    setApproveTarget(request);
+    setActionError("");
+  };
+
+  const confirmApprove = async () => {
+    if (!approveTarget) return;
+    setProcessingId(approveTarget.id);
     setActionError("");
     try {
-      await approveBookingAPI(request.id);
+      await approveBookingAPI(approveTarget.id);
       setRequests((current) =>
-        current.map((item) => (item.id === request.id ? { ...item, status: "approved" } : item))
+        current.map((item) => (item.id === approveTarget.id ? { ...item, status: "approved" } : item))
       );
-      setSuccessMessage("Booking approved successfully.");
+      showToast("Booking approved successfully.", "success");
+      setApproveTarget(null);
     } catch (err) {
-      setActionError(err.message || "Failed to approve booking.");
+      const message = err.message || "Failed to approve booking.";
+      setActionError(message);
+      showToast(message, "error");
     } finally {
       setProcessingId(null);
     }
@@ -161,11 +178,13 @@ function Dashboard() {
       setRequests((current) =>
         current.map((item) => (item.id === declineTarget.id ? { ...item, status: "declined" } : item))
       );
-      setSuccessMessage("Booking declined successfully.");
+      showToast("Booking declined successfully.", "success");
       setDeclineTarget(null);
       setDeclineReason("");
     } catch (err) {
-      setActionError(err.message || "Failed to decline booking.");
+      const message = err.message || "Failed to decline booking.";
+      setActionError(message);
+      showToast(message, "error");
     } finally {
       setProcessingId(null);
     }
@@ -183,37 +202,49 @@ function Dashboard() {
 
   const departmentChartData = useMemo(() => groupByCount(requests, "department").slice(0, 6), [requests]);
 
+  const decidedCount = stats.approved + stats.declined;
+  const approvalRate = decidedCount ? Math.round((stats.approved / decidedCount) * 100) : null;
+  const busiestDepartment = departmentChartData[0]?.name || "N/A";
+
+  const adminName = (localStorage.getItem("full_name") || "Admin").split(" ")[0];
+  const { greeting, todayLabel } = useGreeting();
+  const { settings } = useSettings();
+
   return (
     <div className="text-[#11233f]">
-      <section className="grid gap-5 rounded-[28px] border border-[rgba(15,23,42,0.08)] bg-white bg-[radial-gradient(circle_at_top_right,rgba(80,133,214,0.22),transparent_28%),radial-gradient(circle_at_left_center,rgba(17,74,157,0.18),transparent_32%)] p-7 lg:grid-cols-[minmax(0,1.8fr)_minmax(280px,0.95fr)]">
-        <div>
-          <div className="text-xs font-bold uppercase tracking-[0.14em] text-[#6b7f9e]">Administration overview</div>
-          <h1 className="my-2.5 max-w-[300px] text-3xl font-bold leading-tight text-[#11233f]">
-            Operational control for vehicle bookings
-          </h1>
-          <p className="m-0 max-w-[65ch] text-[15px] leading-7 text-[#53657f]">
-            Review incoming requests, monitor staff activity, and keep scheduling decisions moving with clear visual signals.
-          </p>
+      <section className="relative flex min-h-[200px] flex-col justify-center gap-6 overflow-hidden rounded-3xl border border-slate-200 bg-gradient-to-br from-white to-[#eef3ff] p-8 lg:flex-row lg:items-center lg:justify-between">
+        <div className="pointer-events-none absolute inset-0" aria-hidden="true">
+          <div className="motion-reduce:animate-none absolute -left-14 -top-20 h-64 w-64 animate-floatA rounded-full bg-[#1d62bf]/15 blur-3xl" />
+          <div className="motion-reduce:animate-none absolute -right-12 -top-14 h-56 w-56 animate-floatB rounded-full bg-[#c88810]/15 blur-3xl" />
+          <div className="motion-reduce:animate-none absolute -bottom-24 left-1/3 h-60 w-60 animate-floatC rounded-full bg-[#1f8f63]/15 blur-3xl" />
+          <CalendarClock size={160} className="absolute -bottom-8 left-4 text-blue-700/[0.05]" />
         </div>
 
-        <div className="flex min-h-[180px] flex-col justify-between gap-3 rounded-3xl bg-gradient-to-br from-[#113f82] to-[#1d62bf] p-[22px] text-white">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-bold uppercase tracking-[0.14em] text-white/70">Next item in queue</span>
-            <Clock3 size={18} />
+        <div className="relative z-10">
+          <p className="m-0 text-lg font-semibold text-[#6b7f9e]">{greeting}, {adminName} 👋</p>
+          <div className="mt-1 flex items-center gap-3">
+            <h1 className="text-3xl font-bold text-[#11233f]">Bookings overview</h1>
+            <InfoButton text="Review incoming requests, monitor staff activity, and keep scheduling decisions moving." />
           </div>
-          {nextRequest ? (
-            <>
-              <strong className="text-2xl font-bold">{nextRequest.userName}</strong>
-              <p className="m-0 text-white/85">{formatDate(nextRequest.bookingDate)}</p>
-              <span className="text-white/85">{nextRequest.startTime} - {nextRequest.endTime}</span>
-            </>
-          ) : (
-            <>
-              <strong className="text-2xl font-bold">All clear</strong>
-              <p className="m-0 text-white/85">No requests waiting for review right now.</p>
-              <span className="text-white/85">Queue is up to date</span>
-            </>
-          )}
+          <p className="m-0 mt-1 text-sm text-[#7b8ba5]">{todayLabel}</p>
+        </div>
+
+        <div className="relative z-10 overflow-hidden rounded-xl bg-[#f8fafc] px-5 py-3.5">
+          <Clock3 size={80} className="pointer-events-none absolute -right-3 -top-3 z-0 text-blue-700/[0.06]" aria-hidden="true" />
+          <div className="relative z-10 flex items-center gap-3">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-blue-700">
+              <Clock3 size={18} />
+            </div>
+            {nextRequest ? (
+              <p className="m-0 text-[15px] text-[#11233f]">
+                Next: <strong className="font-bold">{nextRequest.userName}</strong>
+                <span className="text-[#7b8ba5]"> · {formatDate(nextRequest.bookingDate)} · {nextRequest.startTime}-{nextRequest.endTime}</span>
+              </p>
+            ) : (
+              <p className="m-0 text-[15px] text-[#7b8ba5]">No pending requests — queue is up to date.</p>
+            )}
+            <InfoButton text="The next booking request awaiting your review." />
+          </div>
         </div>
       </section>
 
@@ -224,38 +255,20 @@ function Dashboard() {
         <MetricCard icon={ShieldCheck} label="System posture" value={staffError || error ? "Check" : "Stable"} detail={staffError || error ? "One or more feeds need attention" : "Core dashboard feeds are responding"} tone="indigo" />
       </section>
 
-      {(actionError || successMessage) && (
-        <div className={`mt-[22px] flex items-center gap-3 rounded-2xl border px-5 py-4 ${actionError ? "border-rose-200 bg-rose-50 text-rose-700" : "border-emerald-200 bg-emerald-50 text-emerald-700"}`}>
-          {actionError ? <AlertCircle size={18} /> : <CheckCircle2 size={18} />}
-          <span className="flex-1 text-sm font-semibold">{actionError || successMessage}</span>
-          <button
-            type="button"
-            className="rounded-lg p-1 hover:bg-black/5"
-            onClick={() => {
-              setActionError("");
-              setSuccessMessage("");
-            }}
-            aria-label="Dismiss message"
-          >
-            <X size={16} />
-          </button>
-        </div>
-      )}
-
       <section className="mt-[22px] grid gap-[22px] xl:grid-cols-[minmax(0,1.45fr)_minmax(360px,0.85fr)]">
-        <article className="rounded-[28px] border border-[rgba(15,23,42,0.08)] bg-white p-6">
-          <div className="mb-[18px] flex flex-col justify-between gap-4 md:flex-row md:items-start">
+        <article className="rounded-[28px] border border-slate-200 bg-white p-7">
+          <div className="mb-5 flex flex-col justify-between gap-3 md:flex-row md:items-center">
             <div>
               <p className="text-xs font-bold uppercase tracking-[0.14em] text-[#6b7f9e]">Review queue</p>
-              <h2 className="mt-1.5 text-[1.4rem] font-bold text-[#11233f]">Pending booking requests</h2>
+              <h2 className="mt-1.5 text-2xl font-bold text-[#11233f]">Pending booking requests</h2>
             </div>
-            <div className="flex items-center gap-2">
-              <div className="inline-flex w-fit items-center gap-2 rounded-full bg-[#edf4ff] px-3 py-2.5 text-[13px] font-bold text-[#114a9d]">
-                <CalendarClock size={16} />
-                <span>{stats.pending} awaiting action</span>
-              </div>
-              <Link to="approvals" className="inline-flex w-fit items-center gap-1 rounded-full border border-[rgba(15,23,42,0.1)] px-3 py-2.5 text-[13px] font-bold text-[#53657f] hover:border-[#1469e1] hover:text-[#1469e1]">
-                View all
+            <div className="flex items-center gap-3">
+              <span className="inline-flex w-fit items-center gap-2 rounded-full bg-[#fff6e7] px-4 py-2 text-sm font-bold text-[#b67808]">
+                <AlertCircle size={17} />
+                {stats.pending}
+              </span>
+              <Link to="approvals" className="text-sm font-bold text-[#53657f] hover:text-[#1469e1]">
+                View all →
               </Link>
             </div>
           </div>
@@ -267,64 +280,69 @@ function Dashboard() {
           ) : pendingPreview.length === 0 ? (
             <PanelState>No pending booking requests right now.</PanelState>
           ) : (
-            <div className="grid gap-4">
+            <div className="divide-y divide-[rgba(15,23,42,0.06)]">
               {pendingPreview.map((request) => {
                 const isProcessing = processingId === request.id;
+                const isPastDue = isPastBooking(request.bookingDate ? new Date(request.bookingDate) : null);
+                const isDisabled = isProcessing || isPastDue;
                 return (
-                  <article key={request.id} className="rounded-[22px] border border-[rgba(15,23,42,0.08)] bg-gradient-to-b from-white to-[#fbfcfe] p-[18px]">
-                    <div className="flex flex-col justify-between gap-4 md:flex-row md:items-center">
-                      <div className="flex items-center gap-3.5">
-                        <div className="flex h-[46px] w-[46px] shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-[#1d62bf] to-[#113f82] font-bold text-white">
-                          {nameInitials(request.userName)}
-                        </div>
-                        <div>
-                          <h3 className="m-0 text-base font-bold text-[#11233f]">{request.userName}</h3>
-                          <p className="mt-1 text-[13px] text-[#7b8ba5]">{formatDate(request.bookingDate)}</p>
-                        </div>
+                  <div key={request.id} className="flex items-center gap-5 py-5">
+                    <div
+                      className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-sm font-bold text-white"
+                      style={{ backgroundColor: colorForName(request.userName) }}
+                    >
+                      {nameInitials(request.userName)}
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-2.5">
+                        <span className="truncate text-lg font-bold text-[#11233f]">{request.userName}</span>
+                        <span className="shrink-0 text-sm text-[#9aa9c0]">{formatDate(request.bookingDate)}</span>
                       </div>
-                      <span className={`inline-flex w-fit rounded-full px-3 py-1.5 text-xs font-bold capitalize ${statusBadgeClass(request.status)}`}>
-                        {statusLabel(request.status)}
-                      </span>
+                      <p className="mt-1.5 truncate text-sm text-[#7b8ba5]">
+                        {request.startTime}–{request.endTime} · {request.location}
+                      </p>
                     </div>
-
-                    <div className="mt-4 flex flex-wrap items-center justify-between gap-3 text-sm text-[#53657f]">
-                      <span>{request.startTime} - {request.endTime}</span>
-                      <span>{request.location}</span>
-                    </div>
-
-                    <div className="mt-4 flex flex-wrap justify-end gap-2 border-t border-[rgba(15,23,42,0.06)] pt-4">
+                    <span className={`shrink-0 rounded-full px-3 py-1.5 text-xs font-bold capitalize ${statusBadgeClass(request.status)}`}>
+                      {statusLabel(request.status)}
+                    </span>
+                    <div className="flex shrink-0 items-center gap-2.5">
                       <button
                         type="button"
-                        className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-xs font-bold text-rose-700 hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-50"
+                        className="flex h-11 w-11 items-center justify-center rounded-xl border border-slate-200 text-rose-600 hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-50"
                         onClick={() => openDeclineDialog(request)}
-                        disabled={isProcessing}
+                        disabled={isDisabled}
+                        aria-label={`Decline ${request.userName}'s booking`}
+                        title={isPastDue ? "Booking date has passed" : "Decline"}
                       >
-                        Decline
+                        <X size={19} />
                       </button>
                       <button
                         type="button"
-                        className="rounded-xl bg-emerald-700 px-4 py-2 text-xs font-bold text-white disabled:cursor-not-allowed disabled:opacity-60"
-                        onClick={() => handleApprove(request)}
-                        disabled={isProcessing}
+                        className="flex h-11 w-11 items-center justify-center rounded-xl bg-emerald-600 text-white hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-60"
+                        onClick={() => openApproveDialog(request)}
+                        disabled={isDisabled}
+                        aria-label={`Approve ${request.userName}'s booking`}
+                        title={isPastDue ? "Booking date has passed" : "Approve"}
                       >
-                        {isProcessing ? "Processing..." : "Approve"}
+                        <CheckCircle size={19} />
                       </button>
                     </div>
-                  </article>
+                  </div>
                 );
               })}
             </div>
           )}
         </article>
 
-        <article className="rounded-[28px] border border-[rgba(15,23,42,0.08)] bg-white p-6">
-          <div className="mb-5">
+        <article className="flex flex-col rounded-[28px] border border-slate-200 bg-white p-6">
+          <div className="mb-3">
             <p className="text-xs font-bold uppercase tracking-[0.14em] text-[#6b7f9e]">Decision mix</p>
-            <h2 className="mt-1.5 text-[1.4rem] font-bold text-[#11233f]">Approval status</h2>
+            <h2 className="mt-1 text-base font-bold text-[#11233f]">Approval status</h2>
           </div>
-          <ResponsiveContainer width="100%" height={300}>
+
+          <ResponsiveContainer width="100%" height={190}>
             <PieChart>
-              <Pie data={statusChartData} dataKey="value" nameKey="name" innerRadius={64} outerRadius={98} paddingAngle={4}>
+              <Pie data={statusChartData} dataKey="value" nameKey="name" innerRadius={54} outerRadius={80} paddingAngle={4}>
                 {statusChartData.map((entry) => (
                   <Cell key={entry.status} fill={STATUS_COLORS[entry.status]} />
                 ))}
@@ -332,6 +350,30 @@ function Dashboard() {
               <Tooltip />
             </PieChart>
           </ResponsiveContainer>
+
+          <div className="mt-2 flex flex-col gap-2">
+            {statusChartData.map((entry) => (
+              <div key={entry.status} className="flex items-center justify-between text-sm">
+                <div className="flex items-center gap-2">
+                  <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ background: STATUS_COLORS[entry.status] }} />
+                  <span className="text-[#53657f]">{entry.name}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="font-bold text-[#11233f]">{entry.value}</span>
+                  <span className="w-9 text-right text-xs text-[#9aa9c0]">
+                    {requests.length ? Math.round((entry.value / requests.length) * 100) : 0}%
+                  </span>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <div className="mt-5 grid grid-cols-2 gap-3 border-t border-[rgba(15,23,42,0.06)] pt-5">
+            <MiniStat label="Approval rate" value={approvalRate === null ? "—" : `${approvalRate}%`} />
+            <MiniStat label="Total requests" value={requests.length} />
+            <MiniStat label="Total hours" value={stats.totalHours.toFixed(1)} />
+            <MiniStat label="Top department" value={busiestDepartment} />
+          </div>
         </article>
       </section>
 
@@ -358,9 +400,51 @@ function Dashboard() {
         </ChartPanel>
       </section>
 
+      <footer className="mt-10 text-center text-[13px] text-slate-500">
+        © {new Date().getFullYear()} Visal Vehicle System. All rights reserved. |{" "}
+        <a href="http://www.vaarde.com" target="_blank" rel="noreferrer" className="hover:text-[#1469e1] transition-colors">
+          {settings.org_name}
+        </a>
+      </footer>
+
+      {approveTarget && (
+        <Modal onClose={() => !processingId && setApproveTarget(null)} closeOnBackdrop={!processingId}>
+          <div className="w-full max-w-md rounded-3xl border border-slate-200 bg-white">
+            <div className="flex items-start justify-between border-b border-slate-100 p-6">
+              <div>
+                <p className="text-xs font-bold uppercase tracking-[0.14em] text-[#6b7f9e]">Booking action</p>
+                <h2 className="mt-1.5 text-xl font-bold text-[#11233f]">Approve booking request</h2>
+              </div>
+              <button type="button" className="flex h-10 w-10 items-center justify-center rounded-xl bg-slate-100 text-slate-500 hover:text-[#11233f]" onClick={() => setApproveTarget(null)} aria-label="Close dialog">
+                <X size={20} />
+              </button>
+            </div>
+            <div className="space-y-5 p-6">
+              <p className="m-0 text-sm text-[#53657f]">
+                Approving <strong className="text-[#11233f]">{approveTarget.userName}</strong>'s request for {formatDate(approveTarget.bookingDate)} ({approveTarget.startTime}–{approveTarget.endTime}) at {approveTarget.location}.
+              </p>
+              {actionError && (
+                <div className="flex items-center gap-3 rounded-xl border border-rose-200 bg-rose-50 p-4 text-sm font-semibold text-rose-700">
+                  <AlertCircle size={18} />
+                  {actionError}
+                </div>
+              )}
+              <div className="flex flex-wrap justify-end gap-3">
+                <button type="button" className="rounded-xl border border-slate-200 bg-white px-5 py-3 text-sm font-bold text-slate-600 hover:bg-slate-50" onClick={() => setApproveTarget(null)} disabled={Boolean(processingId)}>
+                  Cancel
+                </button>
+                <button type="button" className="rounded-xl bg-emerald-700 px-5 py-3 text-sm font-bold text-white disabled:cursor-not-allowed disabled:opacity-60" onClick={confirmApprove} disabled={Boolean(processingId)}>
+                  {processingId ? "Processing..." : "Confirm approval"}
+                </button>
+              </div>
+            </div>
+          </div>
+        </Modal>
+      )}
+
       {declineTarget && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-5 backdrop-blur-md" onClick={() => !processingId && setDeclineTarget(null)}>
-          <div className="w-full max-w-md rounded-3xl border border-[rgba(15,23,42,0.08)] bg-white" onClick={(event) => event.stopPropagation()}>
+        <Modal onClose={() => !processingId && setDeclineTarget(null)} closeOnBackdrop={!processingId}>
+          <div className="w-full max-w-md rounded-3xl border border-slate-200 bg-white">
             <div className="flex items-start justify-between border-b border-slate-100 p-6">
               <div>
                 <p className="text-xs font-bold uppercase tracking-[0.14em] text-[#6b7f9e]">Booking action</p>
@@ -383,6 +467,12 @@ function Dashboard() {
                   placeholder="Add a clear reason for the requester..."
                 />
               </label>
+              {actionError && (
+                <div className="flex items-center gap-3 rounded-xl border border-rose-200 bg-rose-50 p-4 text-sm font-semibold text-rose-700">
+                  <AlertCircle size={18} />
+                  {actionError}
+                </div>
+              )}
               <div className="flex flex-wrap justify-end gap-3">
                 <button type="button" className="rounded-xl border border-slate-200 bg-white px-5 py-3 text-sm font-bold text-slate-600 hover:bg-slate-50" onClick={() => setDeclineTarget(null)} disabled={Boolean(processingId)}>
                   Cancel
@@ -393,29 +483,32 @@ function Dashboard() {
               </div>
             </div>
           </div>
-        </div>
+        </Modal>
       )}
     </div>
   );
 }
 
 function MetricCard({ detail, icon: Icon, label, tone, value }) {
-  const tones = {
-    amber: "bg-[rgba(200,136,16,0.12)] text-[#c88810]",
-    blue: "bg-[rgba(22,119,255,0.12)] text-[#1768db]",
-    green: "bg-[rgba(31,143,99,0.12)] text-[#1f8f63]",
-    indigo: "bg-[rgba(91,99,216,0.12)] text-[#4c56d7]",
+  const toneStyles = {
+    amber: { bg: "bg-amber-500", text: "text-amber-500", border: "border-amber-500/30" },
+    blue: { bg: "bg-blue-500", text: "text-blue-500", border: "border-blue-500/30" },
+    green: { bg: "bg-green-500", text: "text-green-500", border: "border-green-500/30" },
+    indigo: { bg: "bg-indigo-500", text: "text-indigo-500", border: "border-indigo-500/30" },
   };
+  const styles = toneStyles[tone] || toneStyles.blue;
 
   return (
-    <article className="relative flex gap-4 overflow-hidden rounded-3xl border border-[rgba(15,23,42,0.08)] bg-white p-[22px]">
-      <div className={`flex h-[50px] w-[50px] shrink-0 items-center justify-center rounded-2xl ${tones[tone]}`}>
-        <Icon size={22} />
+    <article className={`relative flex flex-col justify-between overflow-hidden rounded-3xl border bg-white p-6 shadow-sm ${styles.border}`}>
+      <div className="flex items-start justify-between gap-4">
+        <span className="text-sm font-bold uppercase tracking-wider text-slate-500">{label}</span>
+        <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-white ${styles.bg}`}>
+          <Icon size={20} />
+        </div>
       </div>
-      <div className="min-w-0">
-        <p className="text-xs font-bold uppercase tracking-[0.14em] text-[#6b7f9e]">{label}</p>
-        <h3 className="my-1.5 truncate text-3xl font-bold leading-none text-[#11233f]">{value}</h3>
-        <span className="text-[13px] leading-5 text-[#53657f]">{detail}</span>
+      <div className="mt-4">
+        <h3 className="text-4xl font-bold leading-none text-slate-800">{value}</h3>
+        <p className="mt-2 text-xs text-slate-500">{detail}</p>
       </div>
     </article>
   );
@@ -423,7 +516,7 @@ function MetricCard({ detail, icon: Icon, label, tone, value }) {
 
 function ChartPanel({ children, subtitle, title }) {
   return (
-    <article className="rounded-[28px] border border-[rgba(15,23,42,0.08)] bg-white p-6">
+    <article className="rounded-[28px] border border-slate-200 bg-white p-6">
       <div className="mb-5">
         <h2 className="text-[1.4rem] font-bold text-[#11233f]">{title}</h2>
         <p className="mt-1 text-sm text-[#7b8ba5]">{subtitle}</p>
@@ -437,7 +530,9 @@ function MiniStat({ label, value }) {
   return (
     <div className="rounded-[22px] border border-[rgba(17,74,157,0.08)] bg-gradient-to-b from-[#f9fbff] to-[#f2f6fb] p-[18px]">
       <span className="text-xs font-bold uppercase tracking-[0.14em] text-[#6d7d96]">{label}</span>
-      <strong className="mt-2 block text-2xl text-[#11233f]">{value}</strong>
+      <strong className="mt-2 block truncate text-xl text-[#11233f]" title={typeof value === "string" ? value : undefined}>
+        {value}
+      </strong>
     </div>
   );
 }

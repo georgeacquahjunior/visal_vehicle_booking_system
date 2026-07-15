@@ -24,17 +24,28 @@ def create_app(config_class=None):
     from .models.bookings import Booking
     from .models.notifications import Notification
     from .models.changelog import Changelog
+    from .models.audit_log import AuditLog
+    from .models.app_settings import AppSettings
+    from .models.support_message import SupportMessage
 
     # Register blueprints
     from .routes.auth import auth_bp
     from .routes.bookings import bookings_bp
     from .routes.notifications import notifications_bp
     from .routes.changelog import changelog_bp
+    from .routes.audit import audit_bp
+    from .routes.settings import settings_bp
+    from .routes.support import support_bp
+    from .routes.broadcast import broadcast_bp
 
     app.register_blueprint(auth_bp)
     app.register_blueprint(bookings_bp)
     app.register_blueprint(notifications_bp)
     app.register_blueprint(changelog_bp)
+    app.register_blueprint(audit_bp)
+    app.register_blueprint(settings_bp)
+    app.register_blueprint(support_bp)
+    app.register_blueprint(broadcast_bp)
 
     # JWT token initialization
     jwt = JWTManager(app)

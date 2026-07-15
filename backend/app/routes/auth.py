@@ -3,6 +3,7 @@ from flask import Blueprint, request, jsonify
 from flask_jwt_extended import create_access_token, jwt_required, get_jwt_identity, get_jwt
 from .. import db
 from ..models.users import User
+from ..services.audit_service import log_action
 
 auth_bp = Blueprint("auth", __name__, url_prefix="/auth")
 
@@ -63,6 +64,15 @@ def register():
     db.session.add(new_user)
     db.session.commit()
 
+    log_action(
+        actor_id=get_jwt_identity(),
+        actor_name=claims.get("full_name"),
+        action="staff_registered",
+        target_type="user",
+        target_id=staff_id,
+        description=f"Registered {role} account for {full_name} ({staff_id})",
+    )
+
     return jsonify({"message": f"{role} {full_name} registered successfully", "staff_id": staff_id}), 201
 
     
@@ -88,6 +98,9 @@ def login():
     if not user.check_password(password):
         return jsonify({"error": "Invalid credentials"}), 401
 
+    if user.status != "active":
+        return jsonify({"error": "This account has been deactivated. Contact an administrator."}), 403
+
     user.last_active = datetime.utcnow()
     db.session.commit()
 
@@ -99,6 +112,15 @@ def login():
         }
     )
 
+    log_action(
+        actor_id=user.staff_id,
+        actor_name=user.full_name,
+        action="login",
+        target_type="user",
+        target_id=user.staff_id,
+        description=f"{user.full_name} logged in",
+    )
+
     return jsonify({
         "message": f"Welcome {user.full_name}!",
         "staff_id": user.staff_id,
@@ -106,6 +128,140 @@ def login():
         "role": user.role,
         "access_token": access_token
     }), 200
+
+
+# Logout - client calls this before discarding its token so the event is recorded
+@auth_bp.route("/logout", methods=["POST"])
+@jwt_required()
+def logout():
+    claims = get_jwt()
+    staff_id = get_jwt_identity()
+
+    log_action(
+        actor_id=staff_id,
+        actor_name=claims.get("full_name"),
+        action="logout",
+        target_type="user",
+        target_id=staff_id,
+        description=f"{claims.get('full_name', staff_id)} logged out",
+    )
+
+    return jsonify({"success": True}), 200
+
+
+# Get my own profile
+@auth_bp.route("/me", methods=["GET"])
+@jwt_required()
+def get_me():
+    staff_id = get_jwt_identity()
+    user = User.query.get(staff_id)
+    if not user:
+        return jsonify({"error": "User not found"}), 404
+
+    return jsonify({
+        "success": True,
+        "user": {
+            "staff_id": user.staff_id,
+            "full_name": user.full_name,
+            "email": user.email,
+            "phone_number": user.phone_number,
+            "department": user.department,
+            "role": user.role,
+            "status": user.status,
+        },
+    }), 200
+
+
+# Update my own profile — name and phone number only (email/department/role/staff_id stay admin-managed)
+@auth_bp.route("/me", methods=["PUT"])
+@jwt_required()
+def update_me():
+    staff_id = get_jwt_identity()
+    claims = get_jwt()
+    user = User.query.get(staff_id)
+    if not user:
+        return jsonify({"error": "User not found"}), 404
+
+    data = request.get_json() or {}
+    full_name = str(data.get("full_name", user.full_name)).strip()
+    phone_number = data.get("phone_number", user.phone_number)
+
+    if not full_name:
+        return jsonify({"error": "full_name is required"}), 400
+
+    changes = []
+    if full_name != user.full_name:
+        changes.append("name")
+    if phone_number != user.phone_number:
+        changes.append("phone")
+
+    user.full_name = full_name
+    user.phone_number = phone_number
+    db.session.commit()
+
+    if changes:
+        log_action(
+            actor_id=staff_id,
+            actor_name=full_name,
+            action="profile_updated",
+            target_type="user",
+            target_id=staff_id,
+            description=f"{full_name} updated their {', '.join(changes)}",
+        )
+
+    return jsonify({
+        "success": True,
+        "user": {
+            "staff_id": user.staff_id,
+            "full_name": user.full_name,
+            "email": user.email,
+            "phone_number": user.phone_number,
+            "department": user.department,
+            "role": user.role,
+            "status": user.status,
+        },
+    }), 200
+
+
+# Change my own password
+@auth_bp.route("/me/password", methods=["PATCH"])
+@jwt_required()
+def change_my_password():
+    staff_id = get_jwt_identity()
+    claims = get_jwt()
+    user = User.query.get(staff_id)
+    if not user:
+        return jsonify({"error": "User not found"}), 404
+
+    data = request.get_json() or {}
+    current_password = data.get("current_password", "")
+    new_password = data.get("new_password", "")
+
+    if not current_password or not new_password:
+        return jsonify({"error": "current_password and new_password are required"}), 400
+
+    if not user.check_password(current_password):
+        return jsonify({"error": "Current password is incorrect"}), 401
+
+    if len(new_password) < 8:
+        return jsonify({"error": "New password must be at least 8 characters"}), 400
+
+    if user.check_password(new_password):
+        return jsonify({"error": "New password must be different from the current password"}), 400
+
+    user.set_password(new_password)
+    db.session.commit()
+
+    log_action(
+        actor_id=staff_id,
+        actor_name=claims.get("full_name"),
+        action="password_changed",
+        target_type="user",
+        target_id=staff_id,
+        description=f"{claims.get('full_name', staff_id)} changed their password",
+    )
+
+    return jsonify({"success": True, "message": "Password updated successfully"}), 200
 
 
 # Get all staffs
@@ -125,7 +281,8 @@ def get_all_users():
             "email": user.email,
             "phone_number": user.phone_number,
             "department": user.department,
-            "role": user.role
+            "role": user.role,
+            "status": user.status
         })
 
     return jsonify({
@@ -133,6 +290,122 @@ def get_all_users():
         "count": len(users_data),
         "users": users_data
     }), 200
+
+
+# Update staff details (Admin only)
+@auth_bp.route("/users/<staff_id>", methods=["PUT"])
+@jwt_required()
+def update_user(staff_id):
+    claims = get_jwt()
+    if claims.get("role") != "admin":
+        return jsonify({"error": "Only admins can update staff details"}), 403
+
+    user = User.query.get(staff_id)
+    if not user:
+        return jsonify({"error": "Staff member not found"}), 404
+
+    data = request.get_json() or {}
+
+    full_name = data.get("full_name", user.full_name)
+    email = str(data.get("email", user.email)).lower().strip()
+    phone_number = data.get("phone_number", user.phone_number)
+    department = data.get("department", user.department)
+    role = data.get("role", user.role)
+    new_staff_id = str(data.get("staff_id", user.staff_id)).strip()
+
+    if not full_name or not email:
+        return jsonify({"error": "full_name and email are required"}), 400
+
+    if not new_staff_id:
+        return jsonify({"error": "staff_id cannot be empty"}), 400
+
+    existing = User.query.filter_by(email=email).first()
+    if existing and existing.staff_id != user.staff_id:
+        return jsonify({"error": "Email already in use by another account"}), 400
+
+    old_staff_id = user.staff_id
+    changing_staff_id = new_staff_id != old_staff_id
+
+    if changing_staff_id:
+        if old_staff_id == get_jwt_identity():
+            return jsonify({"error": "You cannot change your own staff ID. Ask another admin to do this."}), 400
+        if User.query.get(new_staff_id):
+            return jsonify({"error": "Staff ID already in use by another account"}), 400
+
+    changes = []
+    if full_name != user.full_name:
+        changes.append("name")
+    if email != user.email:
+        changes.append("email")
+    if phone_number != user.phone_number:
+        changes.append("phone")
+    if department != user.department:
+        changes.append("department")
+    if role != user.role:
+        changes.append("role")
+    if changing_staff_id:
+        changes.append("staff ID")
+
+    user.full_name = full_name
+    user.email = email
+    user.phone_number = phone_number
+    user.department = department
+    user.role = role
+    if changing_staff_id:
+        user.staff_id = new_staff_id
+
+    db.session.commit()
+
+    if changes:
+        log_action(
+            actor_id=get_jwt_identity(),
+            actor_name=claims.get("full_name"),
+            action="staff_updated",
+            target_type="user",
+            target_id=user.staff_id,
+            description=(
+                f"Updated {', '.join(changes)} for {user.full_name} "
+                f"({f'{old_staff_id} → {user.staff_id}' if changing_staff_id else user.staff_id})"
+            ),
+        )
+
+    return jsonify({"success": True, "message": f"{user.full_name} updated successfully", "staff_id": user.staff_id}), 200
+
+
+# Activate/deactivate a staff account (Admin only)
+@auth_bp.route("/users/<staff_id>/status", methods=["PATCH"])
+@jwt_required()
+def update_user_status(staff_id):
+    claims = get_jwt()
+    if claims.get("role") != "admin":
+        return jsonify({"error": "Only admins can change account status"}), 403
+
+    actor_id = get_jwt_identity()
+    if staff_id == actor_id:
+        return jsonify({"error": "You cannot change the status of your own account"}), 400
+
+    user = User.query.get(staff_id)
+    if not user:
+        return jsonify({"error": "Staff member not found"}), 404
+
+    data = request.get_json() or {}
+    new_status = str(data.get("status", "")).strip().lower()
+    if new_status not in ("active", "inactive"):
+        return jsonify({"error": "status must be 'active' or 'inactive'"}), 400
+
+    user.status = new_status
+    db.session.commit()
+
+    log_action(
+        actor_id=actor_id,
+        actor_name=claims.get("full_name"),
+        action="staff_activated" if new_status == "active" else "staff_deactivated",
+        target_type="user",
+        target_id=user.staff_id,
+        description=f"{'Activated' if new_status == 'active' else 'Deactivated'} account for {user.full_name} ({user.staff_id})",
+    )
+
+    return jsonify({"success": True, "status": user.status}), 200
 
 
 # Heartbeat - called periodically by logged-in clients to mark themselves active

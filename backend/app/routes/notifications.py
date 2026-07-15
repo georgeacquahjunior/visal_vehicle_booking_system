@@ -21,6 +21,7 @@ def get_notifications():
     for n in notes:
         results.append({
             "id": n.id,
+            "title": n.title,
             "message": n.message,
             "type": n.type,
             "is_read": n.is_read,

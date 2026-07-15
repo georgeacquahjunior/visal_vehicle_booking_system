@@ -4,9 +4,14 @@ from ..extensions import mail
 from datetime import datetime
 from ..models.bookings import Booking
 from ..models.users import User, Roles
+from .settings_service import get_settings
 
 
 def send_booking_notification(user_email, subject, body, is_approved=True, booking_details=None):
+    if not get_settings().email_notifications_enabled:
+        current_app.logger.info(f"Email notifications disabled — skipped email to {user_email}")
+        return False
+
     try:
         # Create professional HTML email template
         html_body = _create_email_template(
@@ -31,7 +36,10 @@ def send_daily_booking_summary():
     """
     Send a daily summary email at 5pm for today's and future bookings.
     """
-    
+    if not get_settings().email_notifications_enabled:
+        current_app.logger.info("Email notifications disabled — skipped daily booking summary")
+        return False
+
     today = datetime.now().date()
 
     upcoming_bookings = (

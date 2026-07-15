@@ -4,6 +4,7 @@ import {
   BarChart3,
   CalendarClock,
   CheckCircle2,
+  Clock,
   Clock3,
   Download,
   Filter,
@@ -13,12 +14,12 @@ import {
   UsersRound,
 } from "lucide-react";
 import {
+  Area,
+  AreaChart,
   Bar,
   BarChart,
   CartesianGrid,
   Cell,
-  Line,
-  LineChart,
   Pie,
   PieChart,
   ResponsiveContainer,
@@ -27,6 +28,9 @@ import {
   YAxis,
 } from "recharts";
 import { API_BASE_URL } from "../../config.js";
+import InfoButton from "../../components/InfoButton";
+import Pagination from "../../components/Pagination";
+import useGreeting from "../../hooks/useGreeting.js";
 
 const STATUS_COLORS = {
   approved: "#1f8f63",
@@ -34,7 +38,8 @@ const STATUS_COLORS = {
   declined: "#cc4a43",
 };
 
-const CHART_COLORS = ["#1768db", "#1f8f63", "#c88810", "#cc4a43", "#7c3aed", "#0f766e"];
+const CHART_COLORS = ["#1768db", "#1f8f63", "#c88810", "#cc4a43", "#7c3aed", "#0d9488"];
+const TABLE_PAGE_SIZE = 10;
 
 const fallbackBookings = [
   {
@@ -80,6 +85,7 @@ function Reports() {
   const [endDate, setEndDate] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [departmentFilter, setDepartmentFilter] = useState("all");
+  const [tablePage, setTablePage] = useState(1);
 
   useEffect(() => {
     const fetchBookings = async () => {
@@ -129,6 +135,10 @@ function Reports() {
     });
   }, [bookings, departmentFilter, endDate, startDate, statusFilter]);
 
+  useEffect(() => {
+    setTablePage(1);
+  }, [startDate, endDate, statusFilter, departmentFilter]);
+
   const departments = useMemo(() => {
     return ["all", ...Array.from(new Set(bookings.map((booking) => booking.department))).sort()];
   }, [bookings]);
@@ -143,9 +153,9 @@ function Reports() {
     const approvalRate = total ? (approved / total) * 100 : 0;
     const declineRate = total ? (declined / total) * 100 : 0;
     const uniqueStaff = new Set(filteredBookings.map((booking) => booking.staffName)).size;
-    const topPurpose = topEntry(filteredBookings, "purpose");
     const topLocation = topEntry(filteredBookings, "location");
-    const busiestDay = topEntry(filteredBookings, "bookingDate");
+    const avgPerStaff = uniqueStaff ? total / uniqueStaff : 0;
+    const peakHour = topEntry(filteredBookings, (booking) => hourBucketLabel(booking.startTime));
     const backlogHours = filteredBookings
       .filter((booking) => booking.status === "pending")
       .reduce((sum, booking) => sum + durationHours(booking.startTime, booking.endTime), 0);
@@ -154,13 +164,13 @@ function Reports() {
       approvalRate,
       approved,
       averageDuration,
+      avgPerStaff,
       backlogHours,
-      busiestDay,
       declined,
       declineRate,
+      peakHour,
       pending,
       topLocation,
-      topPurpose,
       total,
       totalHours,
       uniqueStaff,
@@ -187,7 +197,34 @@ function Reports() {
   }, [filteredBookings]);
 
   const purposeData = useMemo(() => groupByCount(filteredBookings, "purpose").slice(0, 6), [filteredBookings]);
-  const departmentData = useMemo(() => groupByCount(filteredBookings, "department").slice(0, 6), [filteredBookings]);
+  const departmentData = useMemo(
+    () =>
+      groupByCount(filteredBookings, "department")
+        .slice(0, 6)
+        .map((entry, index) => ({ ...entry, fill: CHART_COLORS[index % CHART_COLORS.length] })),
+    [filteredBookings]
+  );
+
+  const hourlyDemand = useMemo(() => {
+    const buckets = Array.from({ length: 13 }, (_, i) => {
+      const hour = 6 + i;
+      return { hour, label: hourBucketLabel(`${String(hour).padStart(2, "0")}:00`), count: 0 };
+    });
+    const byHour = new Map(buckets.map((bucket) => [bucket.hour, bucket]));
+
+    filteredBookings.forEach((booking) => {
+      const minutes = timeToMinutes(booking.startTime);
+      if (minutes === null) return;
+      const hour = Math.floor(minutes / 60);
+      const bucket = byHour.get(hour);
+      if (bucket) bucket.count += 1;
+    });
+
+    return buckets;
+  }, [filteredBookings]);
+
+  const tablePageStart = (tablePage - 1) * TABLE_PAGE_SIZE;
+  const visibleBookings = filteredBookings.slice(tablePageStart, tablePageStart + TABLE_PAGE_SIZE);
 
   const exportToCSV = () => {
     const headers = ["Booking Date", "Staff", "Department", "Start", "End", "Duration", "Location", "Purpose", "Status"];
@@ -224,27 +261,37 @@ function Reports() {
     setDepartmentFilter("all");
   };
 
+  const { todayLabel } = useGreeting();
+
   return (
     <div className="text-[#11233f]">
-      <section className="grid gap-5 rounded-[28px] border border-slate-200 bg-white bg-[radial-gradient(circle_at_top_right,rgba(80,133,214,0.2),transparent_30%)] p-7 lg:grid-cols-[minmax(0,1.8fr)_minmax(280px,0.9fr)]">
-        <div>
-          <div className="text-xs font-bold uppercase tracking-[0.14em] text-slate-500">Reports & analytics</div>
-          <h1 className="my-2.5 max-w-[14ch] text-3xl font-bold leading-tight text-[#11233f]">Decision dashboard for vehicle usage</h1>
-          <p className="max-w-[68ch] text-[15px] leading-7 text-slate-600">
-            Track demand, approval flow, booking hours, staff coverage, and operational pressure points from one reporting view.
-          </p>
+      <section className="relative flex min-h-[200px] flex-col justify-center gap-6 overflow-hidden rounded-3xl border border-slate-200 bg-gradient-to-br from-white to-[#eef3ff] p-8 lg:flex-row lg:items-center lg:justify-between">
+        <div className="pointer-events-none absolute inset-0" aria-hidden="true">
+          <div className="motion-reduce:animate-none absolute -left-14 -top-20 h-64 w-64 animate-floatA rounded-full bg-[#1d62bf]/15 blur-3xl" />
+          <div className="motion-reduce:animate-none absolute -right-12 -top-14 h-56 w-56 animate-floatB rounded-full bg-[#c88810]/15 blur-3xl" />
+          <div className="motion-reduce:animate-none absolute -bottom-24 left-1/3 h-60 w-60 animate-floatC rounded-full bg-[#1f8f63]/15 blur-3xl" />
+          <BarChart3 size={160} className="absolute -bottom-8 left-4 text-blue-700/[0.05]" />
         </div>
 
-        <div className="flex min-h-[180px] flex-col justify-between gap-3 rounded-3xl bg-gradient-to-br from-[#113f82] to-[#1d62bf] p-[22px] text-white">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-bold uppercase tracking-[0.14em] text-white/70">Executive signal</span>
-            <TrendingUp size={18} />
+        <div className="relative z-10">
+          <div className="flex items-center gap-3">
+            <h1 className="text-3xl font-bold text-[#11233f]">Decision dashboard for vehicle usage</h1>
+            <InfoButton text="Track demand, approval flow, booking hours, staff coverage, and operational pressure points from one reporting view." />
           </div>
-          <strong className="text-2xl font-bold">{analytics.approvalRate.toFixed(0)}% approval rate</strong>
-          <p className="m-0 text-sm leading-6 text-white/85">
-            {analytics.pending} pending request{analytics.pending === 1 ? "" : "s"} representing {analytics.backlogHours.toFixed(1)} booked hours.
-          </p>
-          <span className="text-sm text-white/75">{loading ? "Refreshing report data..." : `${analytics.total} records in current view`}</span>
+          <p className="m-0 mt-1 text-sm text-[#7b8ba5]">{todayLabel}</p>
+        </div>
+
+        <div className="relative z-10 overflow-hidden rounded-xl bg-[#f8fafc] px-5 py-3.5">
+          <TrendingUp size={80} className="pointer-events-none absolute -right-3 -top-3 z-0 text-blue-700/[0.06]" aria-hidden="true" />
+          <div className="relative z-10 flex items-center gap-3">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-blue-700">
+              <TrendingUp size={18} />
+            </div>
+            <p className="m-0 text-[15px] text-[#11233f]">
+              <strong className="font-bold">{analytics.approvalRate.toFixed(0)}% approval rate</strong>
+              <span className="text-[#7b8ba5]"> · {analytics.pending} pending · {loading ? "refreshing…" : `${analytics.total} records`}</span>
+            </p>
+          </div>
         </div>
       </section>
 
@@ -256,14 +303,14 @@ function Reports() {
       )}
 
       <section className="mt-5 grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
-        <KpiCard icon={CalendarClock} label="Total bookings" value={analytics.total} detail={`${analytics.uniqueStaff} staff member${analytics.uniqueStaff === 1 ? "" : "s"} represented`} tone="blue" />
-        <KpiCard icon={CheckCircle2} label="Approval rate" value={`${analytics.approvalRate.toFixed(0)}%`} detail={`${analytics.approved} approved, ${analytics.declined} declined`} tone="green" />
-        <KpiCard icon={Clock3} label="Pending backlog" value={analytics.pending} detail={`${analytics.backlogHours.toFixed(1)} hours awaiting decision`} tone="amber" />
-        <KpiCard icon={BarChart3} label="Booked hours" value={analytics.totalHours.toFixed(1)} detail={`${analytics.averageDuration.toFixed(1)} hrs average duration`} tone="indigo" />
-        <KpiCard icon={PieChartIcon} label="Decline rate" value={`${analytics.declineRate.toFixed(0)}%`} detail="Watch this for access or availability constraints" tone="red" />
-        <KpiCard icon={UsersRound} label="Top purpose" value={analytics.topPurpose.name || "N/A"} detail={`${analytics.topPurpose.count || 0} request${analytics.topPurpose.count === 1 ? "" : "s"}`} tone="blue" compact />
-        <KpiCard icon={MapPin} label="Top location" value={analytics.topLocation.name || "N/A"} detail={`${analytics.topLocation.count || 0} booking${analytics.topLocation.count === 1 ? "" : "s"}`} tone="green" compact />
-        <KpiCard icon={CalendarClock} label="Busiest day" value={analytics.busiestDay.name ? formatShortDate(analytics.busiestDay.name) : "N/A"} detail={`${analytics.busiestDay.count || 0} booking${analytics.busiestDay.count === 1 ? "" : "s"}`} tone="amber" />
+        <MetricCard icon={CalendarClock} label="Total bookings" value={analytics.total} detail={`${analytics.uniqueStaff} staff member${analytics.uniqueStaff === 1 ? "" : "s"} represented`} tone="blue" />
+        <MetricCard icon={CheckCircle2} label="Approval rate" value={`${analytics.approvalRate.toFixed(0)}%`} detail={`${analytics.approved} approved, ${analytics.declined} declined`} tone="green" />
+        <MetricCard icon={Clock3} label="Pending backlog" value={analytics.pending} detail={`${analytics.backlogHours.toFixed(1)} hours awaiting decision`} tone="amber" />
+        <MetricCard icon={BarChart3} label="Booked hours" value={analytics.totalHours.toFixed(1)} detail={`${analytics.averageDuration.toFixed(1)}h average duration`} tone="indigo" />
+        <MetricCard icon={PieChartIcon} label="Decline rate" value={`${analytics.declineRate.toFixed(0)}%`} detail="Watch for access constraints" tone="red" />
+        <MetricCard icon={Clock} label="Peak demand hour" value={analytics.peakHour.name || "N/A"} detail={`${analytics.peakHour.count || 0} booking${analytics.peakHour.count === 1 ? "" : "s"} start then`} tone="indigo" />
+        <MetricCard icon={MapPin} label="Top location" value={analytics.topLocation.name || "N/A"} detail={`${analytics.topLocation.count || 0} booking${analytics.topLocation.count === 1 ? "" : "s"}`} tone="green" />
+        <MetricCard icon={UsersRound} label="Bookings per staff" value={analytics.avgPerStaff.toFixed(1)} detail="Average requests per staff" tone="blue" />
       </section>
 
       <section className="mt-5 rounded-[28px] border border-slate-200 bg-white p-6">
@@ -314,27 +361,50 @@ function Reports() {
       <section className="mt-5 grid gap-5 xl:grid-cols-[minmax(0,1.35fr)_minmax(360px,0.8fr)]">
         <ChartPanel title="Booked hours by day" subtitle="Demand trend across the selected period">
           <ResponsiveContainer width="100%" height={280}>
-            <LineChart data={dailyUsage}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-              <XAxis dataKey="date" tick={{ fontSize: 12 }} />
-              <YAxis tick={{ fontSize: 12 }} />
-              <Tooltip />
-              <Line type="monotone" dataKey="hours" stroke="#1768db" strokeWidth={3} dot={{ r: 4 }} />
-            </LineChart>
+            <AreaChart data={dailyUsage} margin={{ left: -12 }}>
+              <defs>
+                <linearGradient id="hoursFill" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor="#1768db" stopOpacity={0.22} />
+                  <stop offset="100%" stopColor="#1768db" stopOpacity={0} />
+                </linearGradient>
+              </defs>
+              <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" vertical={false} />
+              <XAxis dataKey="date" tick={{ fontSize: 12, fill: "#7b8ba5" }} axisLine={{ stroke: "#e2e8f0" }} tickLine={false} />
+              <YAxis tick={{ fontSize: 12, fill: "#7b8ba5" }} axisLine={false} tickLine={false} width={36} />
+              <Tooltip content={<ChartTooltip valueLabel="hours booked" />} cursor={{ stroke: "#1768db", strokeWidth: 1, strokeDasharray: "4 4" }} />
+              <Area type="monotone" dataKey="hours" stroke="#1768db" strokeWidth={2} fill="url(#hoursFill)" activeDot={{ r: 5, strokeWidth: 2, stroke: "#fff" }} dot={{ r: 3, strokeWidth: 0, fill: "#1768db" }} />
+            </AreaChart>
           </ResponsiveContainer>
         </ChartPanel>
 
         <ChartPanel title="Decision mix" subtitle="Approval, pending, and decline distribution">
-          <ResponsiveContainer width="100%" height={280}>
-            <PieChart>
-              <Pie data={statusData} dataKey="value" nameKey="name" innerRadius={62} outerRadius={96} paddingAngle={4}>
-                {statusData.map((entry) => (
-                  <Cell key={entry.status} fill={STATUS_COLORS[entry.status]} />
-                ))}
-              </Pie>
-              <Tooltip />
-            </PieChart>
-          </ResponsiveContainer>
+          <div className="relative">
+            <ResponsiveContainer width="100%" height={220}>
+              <PieChart>
+                <Pie data={statusData} dataKey="value" nameKey="name" innerRadius={62} outerRadius={96} paddingAngle={3} stroke="#fff" strokeWidth={2}>
+                  {statusData.map((entry) => (
+                    <Cell key={entry.status} fill={STATUS_COLORS[entry.status]} />
+                  ))}
+                </Pie>
+                <Tooltip content={<PieTooltip total={analytics.total} />} />
+              </PieChart>
+            </ResponsiveContainer>
+            <div className="pointer-events-none absolute inset-0 top-0 flex h-[220px] flex-col items-center justify-center">
+              <span className="text-3xl font-bold text-[#11233f]">{analytics.total}</span>
+              <span className="text-xs font-semibold uppercase tracking-wide text-slate-400">Total</span>
+            </div>
+          </div>
+          <div className="mt-4 flex flex-wrap justify-center gap-4">
+            {statusData.map((entry) => (
+              <span key={entry.status} className="flex items-center gap-2 text-xs font-semibold text-slate-600">
+                <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: STATUS_COLORS[entry.status] }} />
+                {entry.name}
+                <span className="text-slate-400">
+                  {entry.value} · {analytics.total ? Math.round((entry.value / analytics.total) * 100) : 0}%
+                </span>
+              </span>
+            ))}
+          </div>
         </ChartPanel>
       </section>
 
@@ -342,27 +412,41 @@ function Reports() {
         <ChartPanel title="Top booking purposes" subtitle="Use this to identify recurring vehicle demand">
           <ResponsiveContainer width="100%" height={300}>
             <BarChart data={purposeData} layout="vertical" margin={{ left: 20 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-              <XAxis type="number" tick={{ fontSize: 12 }} />
-              <YAxis dataKey="name" type="category" width={135} tick={{ fontSize: 12 }} />
-              <Tooltip />
-              <Bar dataKey="count" radius={[0, 8, 8, 0]} fill="#1768db" />
+              <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" horizontal={false} />
+              <XAxis type="number" tick={{ fontSize: 12, fill: "#7b8ba5" }} axisLine={false} tickLine={false} allowDecimals={false} />
+              <YAxis dataKey="name" type="category" width={135} tick={{ fontSize: 12, fill: "#374151" }} axisLine={false} tickLine={false} />
+              <Tooltip content={<ChartTooltip valueLabel="requests" />} cursor={{ fill: "rgba(23,104,219,0.06)" }} />
+              <Bar dataKey="count" radius={[0, 6, 6, 0]} fill="#1768db" maxBarSize={22} />
             </BarChart>
           </ResponsiveContainer>
         </ChartPanel>
 
         <ChartPanel title="Bookings by department" subtitle="Compare demand across teams">
           <ResponsiveContainer width="100%" height={300}>
-            <BarChart data={departmentData}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-              <XAxis dataKey="name" tick={{ fontSize: 12 }} />
-              <YAxis tick={{ fontSize: 12 }} />
-              <Tooltip />
-              <Bar dataKey="count" radius={[8, 8, 0, 0]}>
-                {departmentData.map((entry, index) => (
-                  <Cell key={entry.name} fill={CHART_COLORS[index % CHART_COLORS.length]} />
+            <BarChart data={departmentData} margin={{ left: -12 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" vertical={false} />
+              <XAxis dataKey="name" tick={{ fontSize: 12, fill: "#7b8ba5" }} axisLine={{ stroke: "#e2e8f0" }} tickLine={false} />
+              <YAxis tick={{ fontSize: 12, fill: "#7b8ba5" }} axisLine={false} tickLine={false} width={36} allowDecimals={false} />
+              <Tooltip content={<ChartTooltip valueLabel="bookings" />} cursor={{ fill: "rgba(23,104,219,0.06)" }} />
+              <Bar dataKey="count" radius={[6, 6, 0, 0]} maxBarSize={44}>
+                {departmentData.map((entry) => (
+                  <Cell key={entry.name} fill={entry.fill} />
                 ))}
               </Bar>
+            </BarChart>
+          </ResponsiveContainer>
+        </ChartPanel>
+      </section>
+
+      <section className="mt-5">
+        <ChartPanel title="Demand by time of day" subtitle="When bookings start — use this to plan driver and vehicle coverage windows">
+          <ResponsiveContainer width="100%" height={220}>
+            <BarChart data={hourlyDemand} margin={{ left: -12 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" vertical={false} />
+              <XAxis dataKey="label" tick={{ fontSize: 11, fill: "#7b8ba5" }} axisLine={{ stroke: "#e2e8f0" }} tickLine={false} interval={1} />
+              <YAxis tick={{ fontSize: 12, fill: "#7b8ba5" }} axisLine={false} tickLine={false} width={36} allowDecimals={false} />
+              <Tooltip content={<ChartTooltip valueLabel="bookings" />} cursor={{ fill: "rgba(23,104,219,0.06)" }} />
+              <Bar dataKey="count" radius={[6, 6, 0, 0]} fill="#7c3aed" maxBarSize={28} />
             </BarChart>
           </ResponsiveContainer>
         </ChartPanel>
@@ -380,27 +464,30 @@ function Reports() {
           </span>
         </div>
 
-        <div className="overflow-x-auto rounded-[22px] border border-slate-200">
-          <table className="w-full min-w-[980px] border-collapse bg-white">
+        <div className="rounded-[22px] border border-slate-200 overflow-hidden">
+          <table className="w-full table-fixed border-collapse bg-white">
             <thead className="bg-slate-50">
               <tr>
-                {["Date", "Staff", "Department", "Time", "Hours", "Purpose", "Location", "Status"].map((heading) => (
-                  <th key={heading} className="border-b border-slate-200 px-4 py-[18px] text-left text-xs font-bold uppercase tracking-[0.08em] text-slate-500">
-                    {heading}
-                  </th>
-                ))}
+                <th className="w-[10%] border-b border-slate-200 px-4 py-[18px] text-left text-xs font-bold uppercase tracking-[0.08em] text-slate-500">Date</th>
+                <th className="w-[15%] border-b border-slate-200 px-4 py-[18px] text-left text-xs font-bold uppercase tracking-[0.08em] text-slate-500">Staff</th>
+                <th className="hidden w-[12%] border-b border-slate-200 px-4 py-[18px] text-left text-xs font-bold uppercase tracking-[0.08em] text-slate-500 lg:table-cell">Department</th>
+                <th className="w-[13%] border-b border-slate-200 px-4 py-[18px] text-left text-xs font-bold uppercase tracking-[0.08em] text-slate-500">Time</th>
+                <th className="hidden w-[7%] border-b border-slate-200 px-4 py-[18px] text-left text-xs font-bold uppercase tracking-[0.08em] text-slate-500 lg:table-cell">Hours</th>
+                <th className="w-[20%] border-b border-slate-200 px-4 py-[18px] text-left text-xs font-bold uppercase tracking-[0.08em] text-slate-500">Purpose</th>
+                <th className="hidden w-[13%] border-b border-slate-200 px-4 py-[18px] text-left text-xs font-bold uppercase tracking-[0.08em] text-slate-500 md:table-cell">Location</th>
+                <th className="w-[10%] border-b border-slate-200 px-4 py-[18px] text-left text-xs font-bold uppercase tracking-[0.08em] text-slate-500">Status</th>
               </tr>
             </thead>
             <tbody>
-              {filteredBookings.map((booking) => (
+              {visibleBookings.map((booking) => (
                 <tr key={booking.id}>
-                  <td className="border-b border-slate-100 px-4 py-[18px] text-sm text-slate-600">{formatShortDate(booking.bookingDate)}</td>
-                  <td className="border-b border-slate-100 px-4 py-[18px] text-sm font-semibold text-[#11233f]">{booking.staffName}</td>
-                  <td className="border-b border-slate-100 px-4 py-[18px] text-sm text-slate-600">{booking.department}</td>
-                  <td className="border-b border-slate-100 px-4 py-[18px] text-sm text-slate-600">{booking.startTime} - {booking.endTime}</td>
-                  <td className="border-b border-slate-100 px-4 py-[18px] text-sm text-slate-600">{durationHours(booking.startTime, booking.endTime).toFixed(1)}</td>
-                  <td className="border-b border-slate-100 px-4 py-[18px] text-sm text-slate-600">{booking.purpose}</td>
-                  <td className="border-b border-slate-100 px-4 py-[18px] text-sm text-slate-600">{booking.location}</td>
+                  <td className="truncate border-b border-slate-100 px-4 py-[18px] text-sm text-slate-600">{formatShortDate(booking.bookingDate)}</td>
+                  <td className="truncate border-b border-slate-100 px-4 py-[18px] text-sm font-semibold text-[#11233f]">{booking.staffName}</td>
+                  <td className="hidden truncate border-b border-slate-100 px-4 py-[18px] text-sm text-slate-600 lg:table-cell">{booking.department}</td>
+                  <td className="truncate border-b border-slate-100 px-4 py-[18px] text-sm text-slate-600">{booking.startTime} - {booking.endTime}</td>
+                  <td className="hidden truncate border-b border-slate-100 px-4 py-[18px] text-sm text-slate-600 lg:table-cell">{durationHours(booking.startTime, booking.endTime).toFixed(1)}</td>
+                  <td className="truncate border-b border-slate-100 px-4 py-[18px] text-sm text-slate-600">{booking.purpose}</td>
+                  <td className="hidden truncate border-b border-slate-100 px-4 py-[18px] text-sm text-slate-600 md:table-cell">{booking.location}</td>
                   <td className="border-b border-slate-100 px-4 py-[18px] text-sm">
                     <span className={`inline-flex rounded-full px-3 py-1.5 text-xs font-bold capitalize ${statusBadgeClass(booking.status)}`}>
                       {statusLabel(booking.status)}
@@ -411,29 +498,34 @@ function Reports() {
             </tbody>
           </table>
         </div>
+
+        <Pagination currentPage={tablePage} onPageChange={setTablePage} pageSize={TABLE_PAGE_SIZE} totalItems={filteredBookings.length} />
       </section>
     </div>
   );
 }
 
-function KpiCard({ compact = false, detail, icon: Icon, label, tone, value }) {
-  const tones = {
-    amber: "bg-amber-50 text-amber-700",
-    blue: "bg-blue-50 text-blue-700",
-    green: "bg-emerald-50 text-emerald-700",
-    indigo: "bg-indigo-50 text-indigo-700",
-    red: "bg-rose-50 text-rose-700",
+function MetricCard({ detail, icon: Icon, label, tone, value }) {
+  const toneStyles = {
+    amber: { bg: "bg-amber-500", text: "text-amber-500", border: "border-amber-500/30" },
+    blue: { bg: "bg-blue-500", text: "text-blue-500", border: "border-blue-500/30" },
+    green: { bg: "bg-green-500", text: "text-green-500", border: "border-green-500/30" },
+    indigo: { bg: "bg-indigo-500", text: "text-indigo-500", border: "border-indigo-500/30" },
+    red: { bg: "bg-rose-500", text: "text-rose-500", border: "border-rose-500/30" },
   };
+  const styles = toneStyles[tone] || toneStyles.blue;
 
   return (
-    <article className="flex min-h-[132px] gap-4 rounded-[22px] border border-slate-200 bg-white p-5">
-      <div className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl ${tones[tone]}`}>
-        <Icon size={20} />
+    <article className={`relative flex flex-col justify-between overflow-hidden rounded-3xl border bg-white p-6 shadow-sm ${styles.border}`}>
+      <div className="flex items-start justify-between gap-4">
+        <span className="text-sm font-bold uppercase tracking-wider text-slate-500">{label}</span>
+        <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-white ${styles.bg}`}>
+          <Icon size={20} />
+        </div>
       </div>
-      <div className="min-w-0">
-        <p className="text-xs font-bold uppercase tracking-[0.14em] text-slate-500">{label}</p>
-        <h3 className={`${compact ? "text-xl" : "text-3xl"} my-1.5 truncate font-bold leading-tight text-[#11233f]`}>{value}</h3>
-        <span className="text-[13px] leading-5 text-slate-600">{detail}</span>
+      <div className="mt-4">
+        <h3 className="text-2xl font-bold leading-none text-slate-800">{value}</h3>
+        <p className="mt-2 text-xs text-slate-500">{detail}</p>
       </div>
     </article>
   );
@@ -448,6 +540,39 @@ function ChartPanel({ children, subtitle, title }) {
       </div>
       {children}
     </article>
+  );
+}
+
+function ChartTooltip({ active, label, payload, valueLabel }) {
+  if (!active || !payload || !payload.length) return null;
+  const entry = payload[0];
+
+  return (
+    <div className="rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 shadow-lg">
+      <p className="m-0 text-xs font-bold uppercase tracking-wide text-slate-400">{label ?? entry.payload?.name}</p>
+      <p className="m-0 mt-1 flex items-center gap-1.5 text-sm font-bold text-[#11233f]">
+        <span className="h-2 w-2 shrink-0 rounded-full" style={{ backgroundColor: entry.payload?.fill || entry.color || entry.fill }} />
+        {entry.value} {valueLabel}
+      </p>
+    </div>
+  );
+}
+
+function PieTooltip({ active, payload, total }) {
+  if (!active || !payload || !payload.length) return null;
+  const entry = payload[0];
+  const percent = total ? Math.round((entry.value / total) * 100) : 0;
+
+  return (
+    <div className="rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 shadow-lg">
+      <p className="m-0 flex items-center gap-1.5 text-xs font-bold uppercase tracking-wide text-slate-400">
+        <span className="h-2 w-2 shrink-0 rounded-full" style={{ backgroundColor: STATUS_COLORS[entry.payload.status] }} />
+        {entry.name}
+      </p>
+      <p className="m-0 mt-1 text-sm font-bold text-[#11233f]">
+        {entry.value} booking{entry.value === 1 ? "" : "s"} <span className="font-medium text-slate-400">· {percent}%</span>
+      </p>
+    </div>
   );
 }
 
@@ -475,8 +600,9 @@ function timeToMinutes(value) {
 }
 
 function groupByCount(items, key) {
+  const selector = typeof key === "function" ? key : (item) => item[key];
   const grouped = items.reduce((acc, item) => {
-    const label = item[key] || "Not specified";
+    const label = selector(item) || "Not specified";
     acc[label] = (acc[label] || 0) + 1;
     return acc;
   }, {});
@@ -484,6 +610,15 @@ function groupByCount(items, key) {
   return Object.entries(grouped)
     .map(([name, count]) => ({ name, count }))
     .sort((a, b) => b.count - a.count);
+}
+
+function hourBucketLabel(startTime) {
+  const minutes = timeToMinutes(startTime);
+  if (minutes === null) return null;
+  const hour = Math.floor(minutes / 60);
+  const period = hour >= 12 ? "PM" : "AM";
+  const displayHour = hour % 12 === 0 ? 12 : hour % 12;
+  return `${displayHour}:00 ${period}`;
 }
 
 function topEntry(items, key) {

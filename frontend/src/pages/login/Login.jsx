@@ -1,12 +1,13 @@
 import React, { useState } from "react";
 import logo from "../../assets/visal_logo.webp";
 import bgImage from "../../assets/bus.png";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import Footer from "../../components/Footer";
 import { loginUser } from "../../utils/login";
 
 function Login() {
   const navigate = useNavigate();
+  const location = useLocation();
 
   const [staff_id, setStaffId] = useState("");
   const [password, setPassword] = useState("");
@@ -14,6 +15,7 @@ function Login() {
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const sessionExpired = Boolean(location.state?.sessionExpired);
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -39,6 +41,13 @@ function Login() {
           <p className="text-center text-gray-500 text-sm mb-6">
             Sign in to manage bookings, approvals and fleet operations.
           </p>
+
+          {sessionExpired && (
+            <div className="mb-4 flex items-center gap-2 rounded-xl bg-amber-50 p-3 text-sm text-amber-700">
+              <i className="fa-solid fa-clock"></i>
+              <span>Your session expired. Please sign in again.</span>
+            </div>
+          )}
 
           {/* FORM */}
           <form onSubmit={handleSubmit} className="space-y-4">

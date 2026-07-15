@@ -1,9 +1,9 @@
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
-import Approvals from '../pages/admin/approvals/Approvals';
+import Approvals from '../pages/admin/Approvals';
 
 // Mock the approvals API functions
-vi.mock('../../utils/approvals', () => ({
+vi.mock('../utils/approvals', () => ({
   fetchApprovalBookings: vi.fn(() => Promise.resolve([])),
   approveBookingAPI: vi.fn(),
   declineBookingAPI: vi.fn(),

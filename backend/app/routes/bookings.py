@@ -1,10 +1,13 @@
 from flask import Blueprint, request, jsonify, current_app
-from datetime import datetime
+from datetime import datetime, timedelta
 from flask_jwt_extended import jwt_required, get_jwt_identity, get_jwt
 from .. import db
 from ..models.bookings import Booking
-from ..models.users import User
+from ..models.users import User, Roles
+from ..models.notifications import Notification
 from ..services.email_service import send_booking_notification
+from ..services.audit_service import log_action
+from ..services.settings_service import get_settings
 
 bookings_bp = Blueprint("bookings", __name__, url_prefix="/bookings")
 
@@ -41,6 +44,31 @@ def create_booking():
     if start_time >= end_time:
         return jsonify({"error": "start_time must be earlier than end_time"}), 400
 
+    settings = get_settings()
+
+    if start_time < settings.booking_start_time or end_time > settings.booking_end_time:
+        return jsonify({
+            "error": f"Bookings must fall between {settings.booking_start_time.strftime('%H:%M')} and {settings.booking_end_time.strftime('%H:%M')}"
+        }), 400
+
+    if not settings.allow_weekend_bookings and booking_date.weekday() >= 5:
+        return jsonify({"error": "Weekend bookings are not allowed"}), 400
+
+    if settings.max_booking_duration_minutes is not None:
+        duration_minutes = (datetime.combine(booking_date, end_time) - datetime.combine(booking_date, start_time)).seconds // 60
+        if duration_minutes > settings.max_booking_duration_minutes:
+            return jsonify({"error": f"Bookings cannot exceed {settings.max_booking_duration_minutes} minutes"}), 400
+
+    if settings.min_lead_time_minutes:
+        earliest_allowed = datetime.now() + timedelta(minutes=settings.min_lead_time_minutes)
+        if datetime.combine(booking_date, start_time) < earliest_allowed:
+            return jsonify({"error": f"Bookings require at least {settings.min_lead_time_minutes} minutes advance notice"}), 400
+
+    if settings.max_advance_days is not None:
+        latest_allowed = datetime.now().date() + timedelta(days=settings.max_advance_days)
+        if booking_date > latest_allowed:
+            return jsonify({"error": f"Bookings cannot be made more than {settings.max_advance_days} days in advance"}), 400
+
     # Ensure user exists
     user = User.query.get(user_id)
     if not user:
@@ -59,6 +87,28 @@ def create_booking():
 
     db.session.add(booking)
     db.session.commit()
+
+    log_action(
+        actor_id=user_id,
+        actor_name=user.full_name,
+        action="booking_created",
+        target_type="booking",
+        target_id=booking.id,
+        description=f"{user.full_name} requested a booking on {booking.booking_date.isoformat()} for {location}",
+    )
+
+    # notify admins in-app of the new pending request
+    admin_users = User.query.filter_by(role=Roles.ADMIN).all()
+    for admin_user in admin_users:
+        db.session.add(Notification(
+            user_id=admin_user.staff_id,
+            title="New Booking Request",
+            message=f"{user.full_name} requested a booking on {booking.booking_date.isoformat()} for {location}.",
+            type="submitted",
+            booking_id=booking.id,
+        ))
+    if admin_users:
+        db.session.commit()
 
     return jsonify({
         "message": "Booking created successfully",
@@ -240,6 +290,15 @@ def approve_booking(booking_id):
     db.session.add(note)
     db.session.commit()
 
+    log_action(
+        actor_id=get_jwt_identity(),
+        actor_name=claims.get("full_name"),
+        action="booking_approved",
+        target_type="booking",
+        target_id=booking.id,
+        description=f"Approved booking #{booking.id} for {booking.booking_date.isoformat()}" + (f" — {admin_comment}" if admin_comment else ""),
+    )
+
     # Send email notification
     user = User.query.get(booking.user_id)
     if user and user.email:
@@ -292,6 +351,10 @@ def decline_booking(booking_id):
     data = request.get_json(silent=True) or {}
     admin_comment = data.get("admin_comment")
 
+    settings = get_settings()
+    if settings.require_decline_reason and not (admin_comment and admin_comment.strip()):
+        return jsonify({"error": "A decline reason is required"}), 400
+
     booking.status = "Declined"
     booking.admin_comment = admin_comment
     booking.updated_at = datetime.utcnow()
@@ -311,6 +374,15 @@ def decline_booking(booking_id):
     db.session.add(note)
 
     db.session.commit()
+
+    log_action(
+        actor_id=get_jwt_identity(),
+        actor_name=claims.get("full_name"),
+        action="booking_declined",
+        target_type="booking",
+        target_id=booking.id,
+        description=f"Declined booking #{booking.id} for {booking.booking_date.isoformat()}" + (f" — {admin_comment}" if admin_comment else ""),
+    )
 
     # Send email notification
     user = User.query.get(booking.user_id)
@@ -337,5 +409,59 @@ def decline_booking(booking_id):
         "message": "Booking declined successfully",
         "booking_id": booking.id,
         "status": booking.status
+    }), 200
+
+
+# Cancel a booking (the requester who owns it)
+@bookings_bp.route("/<int:booking_id>/cancel", methods=["PATCH"])
+@jwt_required()
+def cancel_booking(booking_id):
+    user_id = get_jwt_identity()
+    claims = get_jwt()
+
+    booking = Booking.query.get(booking_id)
+    if not booking:
+        return jsonify({"error": "Booking not found"}), 404
+
+    if booking.user_id != user_id and claims.get("role") != "admin":
+        return jsonify({"error": "You can only cancel your own bookings"}), 403
+
+    if booking.status not in ("Pending", "Approved"):
+        return jsonify({"error": f"Booking already {booking.status}"}), 400
+
+    if booking.booking_date < datetime.now().date():
+        return jsonify({"error": "Past bookings cannot be cancelled"}), 400
+
+    booking.status = "Cancelled"
+    booking.updated_at = datetime.utcnow()
+    db.session.commit()
+
+    user = User.query.get(user_id)
+    log_action(
+        actor_id=user_id,
+        actor_name=claims.get("full_name"),
+        action="booking_cancelled",
+        target_type="booking",
+        target_id=booking.id,
+        description=f"{claims.get('full_name', user_id)} cancelled the booking for {booking.booking_date.isoformat()} at {booking.location}",
+    )
+
+    # notify admins in-app that a booking was cancelled
+    admin_users = User.query.filter_by(role=Roles.ADMIN).all()
+    for admin_user in admin_users:
+        db.session.add(Notification(
+            user_id=admin_user.staff_id,
+            title="Booking Cancelled",
+            message=f"{user.full_name if user else user_id} cancelled their booking for {booking.booking_date.isoformat()}.",
+            type="cancelled",
+            booking_id=booking.id,
+        ))
+    if admin_users:
+        db.session.commit()
+
+    return jsonify({
+        "message": "Booking cancelled successfully",
+        "booking_id": booking.id,
+        "status": booking.status,
     }), 200
 

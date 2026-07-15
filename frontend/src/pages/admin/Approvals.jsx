@@ -1,15 +1,20 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
   AlertCircle,
+  Building2,
   CalendarClock,
+  CalendarDays,
+  Car,
   CheckCircle2,
-  ChevronLeft,
-  ChevronRight,
+  Clock,
   Clock3,
   Filter,
+  Mail,
+  MapPin,
   MoreVertical,
   Search,
   X,
+  XCircle,
 } from "lucide-react";
 import {
   approveBookingAPI,
@@ -18,6 +23,12 @@ import {
   formatDate,
   isPastBooking,
 } from "../../utils/approvals";
+import { colorForName } from "../../utils/avatar.js";
+import InfoButton from "../../components/InfoButton";
+import Modal from "../../components/Modal";
+import Pagination from "../../components/Pagination";
+import useGreeting from "../../hooks/useGreeting.js";
+import { showToast } from "../../utils/toast.js";
 
 const PAGE_SIZE = 5;
 
@@ -36,7 +47,6 @@ function Approvals() {
   const [declineDialogOpen, setDeclineDialogOpen] = useState(false);
   const [declineReason, setDeclineReason] = useState("");
   const [actionError, setActionError] = useState("");
-  const [successMessage, setSuccessMessage] = useState("");
 
   useEffect(() => {
     const loadBookings = async () => {
@@ -69,6 +79,18 @@ function Approvals() {
     setOpenActionId(null);
   }, [searchTerm, statusFilter]);
 
+  useEffect(() => {
+    const handleOutsideClick = (event) => {
+      // The action menu is identified by a custom attribute `data-action-menu`
+      // We check if the click is outside any element with this attribute.
+      if (openActionId !== null && !event.target.closest('[data-action-menu]')) {
+        setOpenActionId(null);
+      }
+    };
+    document.addEventListener("mousedown", handleOutsideClick);
+    return () => document.removeEventListener("mousedown", handleOutsideClick);
+  }, [openActionId]);
+
   const filteredBookings = useMemo(() => {
     const search = searchTerm.trim().toLowerCase();
     return bookings.filter((booking) => {
@@ -81,10 +103,8 @@ function Approvals() {
     });
   }, [bookings, searchTerm, statusFilter]);
 
-  const totalPages = Math.max(1, Math.ceil(filteredBookings.length / PAGE_SIZE));
   const pageStart = (currentPage - 1) * PAGE_SIZE;
   const visibleBookings = filteredBookings.slice(pageStart, pageStart + PAGE_SIZE);
-  const pageNumbers = getPaginationRange(currentPage, totalPages);
 
   const statusCounts = {
     all: bookings.length,
@@ -92,6 +112,8 @@ function Approvals() {
     approved: bookings.filter((booking) => booking.status === "approved").length,
     declined: bookings.filter((booking) => booking.status === "declined").length,
   };
+
+  const { todayLabel } = useGreeting();
 
   const handleView = (booking) => {
     setSelectedBooking(booking);
@@ -127,9 +149,11 @@ function Approvals() {
       );
       setApproveDialogOpen(false);
       setSelectedBooking(null);
-      setSuccessMessage("Booking approved successfully.");
+      showToast("Booking approved successfully.", "success");
     } catch (err) {
-      setActionError(err.message || "Failed to approve booking.");
+      const message = err.message || "Failed to approve booking.";
+      setActionError(message);
+      showToast(message, "error");
     } finally {
       setProcessingId(null);
     }
@@ -151,9 +175,11 @@ function Approvals() {
       setDeclineDialogOpen(false);
       setSelectedBooking(null);
       setDeclineReason("");
-      setSuccessMessage("Booking declined successfully.");
+      showToast("Booking declined successfully.", "success");
     } catch (err) {
-      setActionError(err.message || "Failed to decline booking.");
+      const message = err.message || "Failed to decline booking.";
+      setActionError(message);
+      showToast(message, "error");
     } finally {
       setProcessingId(null);
     }
@@ -161,25 +187,33 @@ function Approvals() {
 
   return (
     <div className="p-0 text-[#11233f]">
-      <section className="grid grid-cols-1 gap-5 rounded-[28px] border border-[rgba(15,23,42,0.08)] bg-white bg-[radial-gradient(circle_at_top_right,rgba(80,133,214,0.22),transparent_28%),radial-gradient(circle_at_left_center,rgba(17,74,157,0.18),transparent_32%)] p-7 lg:grid-cols-[minmax(0,1.8fr)_minmax(280px,0.95fr)]">
-        <div>
-          <div className="text-xs font-bold uppercase tracking-[0.14em] text-[#6b7f9e]">Booking approvals</div>
-          <h1 className="my-2.5 max-w-[12ch] text-[clamp(2rem,3vw,3rem)] font-bold leading-tight text-[#11233f]">
-            Review and manage vehicle requests
-          </h1>
-          <p className="m-0 max-w-[65ch] text-[15px] leading-7 text-[#53657f]">
-            Process requests with clearer table controls, duration visibility, and fast row actions.
-          </p>
+      <section className="relative flex min-h-[200px] flex-col justify-center gap-6 overflow-hidden rounded-3xl border border-slate-200 bg-gradient-to-br from-white to-[#eef3ff] p-8 lg:flex-row lg:items-center lg:justify-between">
+        <div className="pointer-events-none absolute inset-0" aria-hidden="true">
+          <div className="motion-reduce:animate-none absolute -left-14 -top-20 h-64 w-64 animate-floatA rounded-full bg-[#1d62bf]/15 blur-3xl" />
+          <div className="motion-reduce:animate-none absolute -right-12 -top-14 h-56 w-56 animate-floatB rounded-full bg-[#c88810]/15 blur-3xl" />
+          <div className="motion-reduce:animate-none absolute -bottom-24 left-1/3 h-60 w-60 animate-floatC rounded-full bg-[#1f8f63]/15 blur-3xl" />
+          <CheckCircle2 size={160} className="absolute -bottom-8 left-4 text-blue-700/[0.05]" />
         </div>
 
-        <div className="flex min-h-[180px] flex-col justify-between gap-3 rounded-3xl bg-gradient-to-br from-[#113f82] to-[#1d62bf] p-[22px] text-white">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-bold uppercase tracking-[0.14em] text-white/70">Quick stats</span>
-            <Clock3 size={18} />
+        <div className="relative z-10">
+          <div className="flex items-center gap-3">
+            <h1 className="text-3xl font-bold text-[#11233f]">Booking approvals</h1>
+            <InfoButton text="Process requests with clearer table controls, duration visibility, and fast row actions." />
           </div>
-          <strong className="text-2xl font-bold">{statusCounts.pending} pending</strong>
-          <p className="m-0 text-white/85">{statusCounts.all} total requests</p>
-          <span className="text-white/85">{statusCounts.approved} approved this period</span>
+          <p className="m-0 mt-1 text-sm text-[#7b8ba5]">{todayLabel}</p>
+        </div>
+
+        <div className="relative z-10 overflow-hidden rounded-xl bg-[#f8fafc] px-5 py-3.5">
+          <CheckCircle2 size={80} className="pointer-events-none absolute -right-3 -top-3 z-0 text-blue-700/[0.06]" aria-hidden="true" />
+          <div className="relative z-10 flex items-center gap-3">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-blue-700">
+              <Clock3 size={18} />
+            </div>
+            <p className="m-0 text-[15px] text-[#11233f]">
+              <strong className="font-bold">{statusCounts.pending} pending</strong>
+              <span className="text-[#7b8ba5]"> · {statusCounts.all} total · {statusCounts.approved} approved</span>
+            </p>
+          </div>
         </div>
       </section>
 
@@ -190,17 +224,14 @@ function Approvals() {
         <MetricCard icon={X} label="Declined" value={statusCounts.declined} detail="Not approved for booking" tone="red" />
       </section>
 
-      {(error || successMessage) && (
-        <div className={`mt-5 flex items-center gap-3 rounded-2xl border px-5 py-4 ${error ? "border-rose-200 bg-rose-50 text-rose-700" : "border-emerald-200 bg-emerald-50 text-emerald-700"}`}>
-          {error ? <AlertCircle size={18} /> : <CheckCircle2 size={18} />}
-          <span className="flex-1 text-sm font-semibold">{error || successMessage}</span>
+      {error && (
+        <div className="mt-5 flex items-center gap-3 rounded-2xl border border-rose-200 bg-rose-50 px-5 py-4 text-rose-700">
+          <AlertCircle size={18} />
+          <span className="flex-1 text-sm font-semibold">{error}</span>
           <button
             type="button"
             className="rounded-lg p-1 hover:bg-black/5"
-            onClick={() => {
-              setError(null);
-              setSuccessMessage("");
-            }}
+            onClick={() => setError(null)}
             aria-label="Dismiss message"
           >
             <X size={16} />
@@ -208,7 +239,7 @@ function Approvals() {
         </div>
       )}
 
-      <section className="mt-5 rounded-3xl border border-[rgba(15,23,42,0.08)] bg-white p-6">
+      <section className="mt-5 rounded-3xl border border-slate-200 bg-white p-6">
         <div className="mb-[18px] flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
           <div>
             <p className="text-xs font-bold uppercase tracking-[0.14em] text-[#6b7f9e]">Request queue</p>
@@ -259,17 +290,17 @@ function Approvals() {
           </PanelState>
         ) : (
           <>
-            <div className="rounded-2xl border border-[rgba(15,23,42,0.08)] bg-white">
+            <div className="rounded-2xl border border-slate-200 bg-white">
               <table className="w-full table-fixed border-collapse text-sm">
                 <thead className="bg-[#f4f7fb]">
                   <tr>
-                    <th className="w-[24%] border-b border-[rgba(15,23,42,0.08)] px-4 py-4 text-left text-xs font-bold uppercase tracking-[0.08em] text-[#61728c]">Requester</th>
-                    <th className="w-[22%] border-b border-[rgba(15,23,42,0.08)] px-4 py-4 text-left text-xs font-bold uppercase tracking-[0.08em] text-[#61728c]">Purpose</th>
-                    <th className="w-[18%] border-b border-[rgba(15,23,42,0.08)] px-4 py-4 text-left text-xs font-bold uppercase tracking-[0.08em] text-[#61728c]">Date & time</th>
-                    <th className="hidden w-[10%] border-b border-[rgba(15,23,42,0.08)] px-4 py-4 text-left text-xs font-bold uppercase tracking-[0.08em] text-[#61728c] lg:table-cell">Duration</th>
-                    <th className="hidden w-[14%] border-b border-[rgba(15,23,42,0.08)] px-4 py-4 text-left text-xs font-bold uppercase tracking-[0.08em] text-[#61728c] md:table-cell">Location</th>
-                    <th className="w-[12%] border-b border-[rgba(15,23,42,0.08)] px-4 py-4 text-left text-xs font-bold uppercase tracking-[0.08em] text-[#61728c]">Status</th>
-                    <th className="w-[10%] border-b border-[rgba(15,23,42,0.08)] px-4 py-4 text-left text-xs font-bold uppercase tracking-[0.08em] text-[#61728c]" />
+                    <th className="w-[24%] border-b border-slate-200 px-4 py-4 text-left text-xs font-bold uppercase tracking-[0.08em] text-[#61728c]">Requester</th>
+                    <th className="w-[22%] border-b border-slate-200 px-4 py-4 text-left text-xs font-bold uppercase tracking-[0.08em] text-[#61728c]">Purpose</th>
+                    <th className="w-[18%] border-b border-slate-200 px-4 py-4 text-left text-xs font-bold uppercase tracking-[0.08em] text-[#61728c]">Date & time</th>
+                    <th className="hidden w-[10%] border-b border-slate-200 px-4 py-4 text-left text-xs font-bold uppercase tracking-[0.08em] text-[#61728c] lg:table-cell">Duration</th>
+                    <th className="hidden w-[14%] border-b border-slate-200 px-4 py-4 text-left text-xs font-bold uppercase tracking-[0.08em] text-[#61728c] md:table-cell">Location</th>
+                    <th className="w-[12%] border-b border-slate-200 px-4 py-4 text-left text-xs font-bold uppercase tracking-[0.08em] text-[#61728c]">Status</th>
+                    <th className="w-[10%] border-b border-slate-200 px-4 py-4 text-left text-xs font-bold uppercase tracking-[0.08em] text-[#61728c]" />
                   </tr>
                 </thead>
                 <tbody>
@@ -281,7 +312,10 @@ function Approvals() {
                       <tr key={booking.id} className="border-b border-[rgba(15,23,42,0.06)] hover:bg-[rgba(17,74,157,0.03)]">
                         <td className="px-4 py-4 align-middle">
                           <div className="flex items-center gap-3">
-                            <div className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-[#1d62bf] to-[#113f82] font-bold text-white">
+                            <div
+                              className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl font-bold text-white"
+                              style={{ backgroundColor: colorForName(booking.userName) }}
+                            >
                               {nameInitials(booking.userName)}
                             </div>
                             <div className="min-w-0">
@@ -312,6 +346,7 @@ function Approvals() {
                         </td>
                         <td className="relative px-4 py-4 text-right align-middle">
                           <button
+                            data-action-menu
                             type="button"
                             className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-600 hover:border-[#1469e1] hover:text-[#1469e1]"
                             onClick={() => setOpenActionId((id) => (id === booking.id ? null : booking.id))}
@@ -321,7 +356,7 @@ function Approvals() {
                           </button>
 
                           {openActionId === booking.id && (
-                            <div className="absolute right-4 top-14 z-20 w-40 overflow-hidden rounded-2xl border border-slate-200 bg-white p-1.5 text-left shadow-xl">
+                            <div data-action-menu className="absolute right-4 top-14 z-20 w-40 overflow-hidden rounded-2xl border border-slate-200 bg-white p-1.5 text-left shadow-xl">
                               <button type="button" className="w-full rounded-xl px-3 py-2 text-left text-sm font-semibold text-slate-700 hover:bg-slate-50" onClick={() => handleView(booking)}>
                                 View details
                               </button>
@@ -355,43 +390,24 @@ function Approvals() {
               </table>
             </div>
 
-            <div className="mt-5 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-              <span className="text-sm font-medium text-[#7b8ba5]">
-                Showing {pageStart + 1}-{Math.min(pageStart + PAGE_SIZE, filteredBookings.length)} of {filteredBookings.length}
-              </span>
-              <div className="flex flex-wrap items-center gap-2">
-                <PaginationButton disabled={currentPage === 1} onClick={() => setCurrentPage((page) => Math.max(1, page - 1))}>
-                  <ChevronLeft size={16} />
-                </PaginationButton>
-                {pageNumbers.map((page, index) =>
-                  page === "dots" ? (
-                    <span key={`dots-${index}`} className="inline-flex h-9 min-w-9 items-center justify-center text-sm font-bold text-slate-400">
-                      ...
-                    </span>
-                  ) : (
-                    <PaginationButton key={page} active={page === currentPage} onClick={() => setCurrentPage(page)}>
-                      {page}
-                    </PaginationButton>
-                  )
-                )}
-                <PaginationButton disabled={currentPage === totalPages} onClick={() => setCurrentPage((page) => Math.min(totalPages, page + 1))}>
-                  <ChevronRight size={16} />
-                </PaginationButton>
-              </div>
-            </div>
+            <Pagination currentPage={currentPage} onPageChange={setCurrentPage} pageSize={PAGE_SIZE} totalItems={filteredBookings.length} />
           </>
         )}
       </section>
 
       {viewDialogOpen && selectedBooking && (
-        <BookingDialog title="Booking details" onClose={() => setViewDialogOpen(false)}>
-          <BookingSummary booking={selectedBooking} />
-          <div className="flex justify-end">
-            <button type="button" className="rounded-xl border border-slate-200 bg-white px-5 py-3 text-sm font-bold text-slate-600 hover:bg-slate-50" onClick={() => setViewDialogOpen(false)}>
-              Close
-            </button>
-          </div>
-        </BookingDialog>
+        <BookingDetailsDialog
+          booking={selectedBooking}
+          onClose={() => setViewDialogOpen(false)}
+          onApprove={() => {
+            setViewDialogOpen(false);
+            handleApprove(selectedBooking);
+          }}
+          onDecline={() => {
+            setViewDialogOpen(false);
+            handleDecline(selectedBooking);
+          }}
+        />
       )}
 
       {approveDialogOpen && selectedBooking && (
@@ -437,22 +453,25 @@ function Approvals() {
 }
 
 function MetricCard({ detail, icon: Icon, label, tone, value }) {
-  const tones = {
-    amber: "bg-amber-50 text-amber-700",
-    blue: "bg-blue-50 text-blue-700",
-    green: "bg-emerald-50 text-emerald-700",
-    red: "bg-rose-50 text-rose-700",
+  const toneStyles = {
+    amber: { bg: "bg-amber-500", text: "text-amber-500", border: "border-amber-500/30" },
+    blue: { bg: "bg-blue-500", text: "text-blue-500", border: "border-blue-500/30" },
+    green: { bg: "bg-green-500", text: "text-green-500", border: "border-green-500/30" },
+    red: { bg: "bg-rose-500", text: "text-rose-500", border: "border-rose-500/30" },
   };
+  const styles = toneStyles[tone] || toneStyles.blue;
 
   return (
-    <article className="flex gap-4 rounded-3xl border border-[rgba(15,23,42,0.08)] bg-white p-[22px]">
-      <div className={`inline-flex h-[50px] w-[50px] shrink-0 items-center justify-center rounded-2xl ${tones[tone]}`}>
-        <Icon size={22} />
+    <article className={`relative flex flex-col justify-between overflow-hidden rounded-3xl border bg-white p-6 shadow-sm ${styles.border}`}>
+      <div className="flex items-start justify-between gap-4">
+        <span className="text-sm font-bold uppercase tracking-wider text-slate-500">{label}</span>
+        <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-white ${styles.bg}`}>
+          <Icon size={20} />
+        </div>
       </div>
-      <div>
-        <p className="text-xs font-bold uppercase tracking-[0.14em] text-[#6b7f9e]">{label}</p>
-        <h3 className="my-1.5 text-3xl font-bold leading-none">{value}</h3>
-        <span className="text-xs leading-tight text-[#53657f]">{detail}</span>
+      <div className="mt-4">
+        <h3 className="text-4xl font-bold leading-none text-slate-800">{value}</h3>
+        <p className="mt-2 text-xs text-slate-500">{detail}</p>
       </div>
     </article>
   );
@@ -464,7 +483,7 @@ function FilterButton({ active, count, label, onClick }) {
       type="button"
       className={`flex items-center gap-1.5 rounded-full border px-3 py-2 text-xs font-semibold transition-colors ${
         active
-          ? "border-sky-500 bg-sky-400 text-white shadow-sm"
+          ? "border-blue-600 bg-blue-500 text-white shadow-sm"
           : "border-[rgba(15,23,42,0.12)] bg-white text-[#53657f] hover:border-[#1469e1] hover:bg-blue-50 hover:text-[#1469e1]"
       }`}
       onClick={onClick}
@@ -473,23 +492,6 @@ function FilterButton({ active, count, label, onClick }) {
       <span className={`min-w-4 rounded-lg px-1.5 py-px text-center text-xs font-bold ${active ? "bg-white/20 text-white" : "bg-[rgba(15,23,42,0.08)] text-[#53657f]"}`}>
         {count}
       </span>
-    </button>
-  );
-}
-
-function PaginationButton({ active = false, children, disabled = false, onClick }) {
-  return (
-    <button
-      type="button"
-      className={`inline-flex h-9 min-w-9 items-center justify-center rounded-xl border px-3 text-sm font-bold transition-colors ${
-        active
-          ? "border-[#1469e1] bg-[#1469e1] text-white"
-          : "border-slate-200 bg-white text-slate-600 hover:border-[#1469e1] hover:text-[#1469e1]"
-      } disabled:cursor-not-allowed disabled:opacity-45`}
-      onClick={onClick}
-      disabled={disabled}
-    >
-      {children}
     </button>
   );
 }
@@ -504,8 +506,8 @@ function PanelState({ children }) {
 
 function BookingDialog({ children, onClose, title }) {
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-5 backdrop-blur-md" onClick={onClose}>
-      <div className="w-full max-w-2xl rounded-3xl border border-[rgba(15,23,42,0.08)] bg-white" onClick={(event) => event.stopPropagation()}>
+    <Modal onClose={onClose}>
+      <div className="w-full max-w-2xl rounded-3xl border border-slate-200 bg-white">
         <div className="flex items-start justify-between border-b border-slate-100 p-6">
           <div>
             <p className="text-xs font-bold uppercase tracking-[0.14em] text-[#6b7f9e]">Booking action</p>
@@ -517,7 +519,115 @@ function BookingDialog({ children, onClose, title }) {
         </div>
         <div className="space-y-5 p-6">{children}</div>
       </div>
-    </div>
+    </Modal>
+  );
+}
+
+function BookingDetailsDialog({ booking, onApprove, onClose, onDecline }) {
+  const isPending = booking.status === "pending";
+
+  const detailRows = [
+    { icon: CalendarDays, label: "Date", value: formatDate(booking.date) },
+    { icon: Clock, label: "Time", value: `${booking.startTime} - ${booking.endTime}` },
+    { icon: Clock3, label: "Duration", value: calculateDuration(booking.startTime, booking.endTime) },
+    { icon: Car, label: "Vehicle", value: booking.vehicleName || "Not assigned" },
+    { icon: MapPin, label: "Location", value: booking.location },
+    { icon: Building2, label: "Department", value: booking.userDept },
+    { icon: Mail, label: "Requester email", value: booking.userEmail },
+    { icon: CalendarDays, label: "Submitted", value: booking.submittedDate ? formatDate(booking.submittedDate) : null },
+  ];
+
+  return (
+    <Modal onClose={onClose}>
+      <div className="w-full max-w-xl overflow-hidden rounded-2xl border border-slate-200 bg-white">
+        <div className="flex items-start justify-between p-6 pb-0">
+          <span className="text-xs font-bold uppercase tracking-[0.14em] text-slate-400">Booking details</span>
+          <button
+            type="button"
+            className="flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 hover:bg-slate-50 hover:text-[#11233f]"
+            onClick={onClose}
+            aria-label="Close dialog"
+          >
+            <X size={18} />
+          </button>
+        </div>
+
+        <div className="flex items-center gap-3.5 p-6 pt-4">
+          <div
+            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-sm font-bold text-white"
+            style={{ backgroundColor: colorForName(booking.userName) }}
+          >
+            {nameInitials(booking.userName)}
+          </div>
+          <div className="min-w-0 flex-1">
+            <h2 className="m-0 truncate text-base font-bold text-[#11233f]">{booking.userName}</h2>
+            <p className="m-0 mt-0.5 truncate text-sm text-slate-500">{booking.userDept || "No department"}</p>
+          </div>
+          <span className={`shrink-0 rounded-full px-3 py-1.5 text-xs font-bold capitalize ${statusBadgeClass(booking.status)}`}>
+            {statusLabel(booking.status)}
+          </span>
+        </div>
+
+        <div className="max-h-[60vh] overflow-y-auto px-6">
+          <p className="m-0 rounded-xl bg-slate-50 p-4 text-sm font-medium leading-relaxed text-[#11233f]">
+            {booking.purpose || "N/A"}
+          </p>
+
+          <dl className="mt-2 divide-y divide-slate-100">
+            {detailRows.map(({ icon: Icon, label, value }) => (
+              <div key={label} className="flex items-center justify-between gap-4 py-3">
+                <dt className="flex items-center gap-2 text-sm text-slate-500">
+                  <Icon size={15} className="shrink-0 text-slate-400" />
+                  {label}
+                </dt>
+                <dd className="m-0 truncate text-right text-sm font-semibold text-[#11233f]">{value || "N/A"}</dd>
+              </div>
+            ))}
+          </dl>
+
+          {booking.notes && (
+            <div className="mb-4 border-t border-slate-100 pt-4">
+              <span className="block text-xs font-bold uppercase tracking-[0.08em] text-slate-400">Additional notes</span>
+              <p className="m-0 mt-1.5 text-sm leading-relaxed text-slate-600">{booking.notes}</p>
+            </div>
+          )}
+
+          {booking.status === "declined" && booking.declineReason && (
+            <div className="mb-5 flex items-start gap-2.5 border-l-2 border-rose-400 py-1 pl-3.5">
+              <XCircle size={15} className="mt-0.5 shrink-0 text-rose-500" />
+              <p className="m-0 text-sm text-slate-600">
+                <strong className="font-semibold text-rose-700">Declined —</strong> {booking.declineReason}
+              </p>
+            </div>
+          )}
+
+          {booking.status === "approved" && booking.approvedBy && (
+            <div className="mb-5 flex items-start gap-2.5 border-l-2 border-emerald-400 py-1 pl-3.5">
+              <CheckCircle2 size={15} className="mt-0.5 shrink-0 text-emerald-500" />
+              <p className="m-0 text-sm text-slate-600">
+                <strong className="font-semibold text-emerald-700">Approved</strong> by {booking.approvedBy}
+              </p>
+            </div>
+          )}
+        </div>
+
+        <div className="flex flex-wrap justify-end gap-3 border-t border-slate-100 p-6">
+          <button type="button" className="rounded-xl border border-slate-200 bg-white px-5 py-3 text-sm font-bold text-slate-600 hover:bg-slate-50" onClick={onClose}>
+            Close
+          </button>
+          {isPending && !isPastBooking(booking.date) && (
+            <>
+              <button type="button" className="rounded-xl border border-rose-200 bg-white px-5 py-3 text-sm font-bold text-rose-700 hover:bg-rose-50" onClick={onDecline}>
+                Decline
+              </button>
+              <button type="button" className="rounded-xl bg-emerald-700 px-5 py-3 text-sm font-bold text-white hover:bg-emerald-800" onClick={onApprove}>
+                Approve
+              </button>
+            </>
+          )}
+        </div>
+      </div>
+    </Modal>
   );
 }
 
@@ -589,35 +699,6 @@ function statusBadgeClass(status) {
   if (status === "approved") return "bg-emerald-50 text-emerald-700";
   if (status === "declined") return "bg-rose-50 text-rose-700";
   return "bg-amber-50 text-amber-700";
-}
-
-function range(start, end) {
-  return Array.from({ length: end - start + 1 }, (_, index) => start + index);
-}
-
-function getPaginationRange(currentPage, totalPages, siblingCount = 0) {
-  const totalSlots = siblingCount * 2 + 5; // first + last + current + 2 siblings + 2 dots
-
-  if (totalSlots >= totalPages) {
-    return range(1, totalPages);
-  }
-
-  const leftSibling = Math.max(currentPage - siblingCount, 1);
-  const rightSibling = Math.min(currentPage + siblingCount, totalPages);
-  const showLeftDots = leftSibling > 2;
-  const showRightDots = rightSibling < totalPages - 1;
-
-  if (!showLeftDots && showRightDots) {
-    const leftRange = range(1, 3 + siblingCount * 2);
-    return [...leftRange, "dots", totalPages];
-  }
-
-  if (showLeftDots && !showRightDots) {
-    const rightRange = range(totalPages - (3 + siblingCount * 2) + 1, totalPages);
-    return [1, "dots", ...rightRange];
-  }
-
-  return [1, "dots", ...range(leftSibling, rightSibling), "dots", totalPages];
 }
 
 export default Approvals;

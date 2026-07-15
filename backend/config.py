@@ -27,6 +27,11 @@ class Config:
     MAIL_PASSWORD = os.getenv("MAIL_PASSWORD")
     MAIL_DEFAULT_SENDER = os.getenv("MAIL_DEFAULT_SENDER", MAIL_USERNAME)
 
+    # Optional extra "from" addresses selectable when sending a broadcast email.
+    # Format: "Label|email,Label2|email2" — each address must be an alias your
+    # SMTP account is authorized to send as (e.g. a Gmail "Send mail as" alias).
+    BROADCAST_SENDERS = os.getenv("BROADCAST_SENDERS", "")
+
     # Daily booking summary settings
     BOOKING_SUMMARY_HOUR = int(os.getenv("BOOKING_SUMMARY_HOUR", "17"))
     START_EMAIL_SCHEDULER = os.getenv("START_EMAIL_SCHEDULER", "True").lower() == "true"
