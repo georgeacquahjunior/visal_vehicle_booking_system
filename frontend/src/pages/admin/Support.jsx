@@ -275,6 +275,7 @@ function Support() {
                   className="rounded-xl bg-[#1469e1] px-5 py-3 text-sm font-bold text-white disabled:cursor-not-allowed disabled:opacity-60"
                   onClick={submitReply}
                   disabled={processing || !replyText.trim()}
+                  data-ga-button="support_send_reply"
                 >
                   {processing ? "Sending..." : "Send reply"}
                 </button>

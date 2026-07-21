@@ -333,6 +333,7 @@ function StaffMembers() {
           <form
             onSubmit={submitEdit}
             className="w-full max-w-lg rounded-3xl border border-slate-200 bg-white"
+            data-ga-form="edit_staff_member"
           >
             <div className="flex items-start justify-between border-b border-slate-100 p-6">
               <div>
@@ -445,6 +446,7 @@ function StaffMembers() {
                 type="submit"
                 className="rounded-xl bg-[#1469e1] px-5 py-3 text-sm font-bold text-white disabled:cursor-not-allowed disabled:opacity-60"
                 disabled={Boolean(processingId)}
+                data-ga-button="save_staff_member_changes"
               >
                 {processingId === editTarget.id ? "Saving..." : "Save changes"}
               </button>
@@ -511,6 +513,7 @@ function StaffMembers() {
                   }`}
                   onClick={confirmStatusChange}
                   disabled={Boolean(processingId)}
+                  data-ga-button={statusTarget.status === "active" ? "deactivate_staff_member" : "activate_staff_member"}
                 >
                   {processingId
                     ? "Processing..."

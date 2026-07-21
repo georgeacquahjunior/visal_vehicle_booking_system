@@ -154,7 +154,7 @@ export default function RegisterStaff() {
             </div>
           </div>
 
-          <form onSubmit={handleSubmit}>
+          <form onSubmit={handleSubmit} data-ga-form="register_staff">
             <div className="grid grid-cols-1 gap-x-6 gap-y-8 md:grid-cols-2">
               <InputField label="Staff ID" name="staff_id" value={formData.staff_id} onChange={handleChange} placeholder="Enter staff ID (e.g., ST001)" required />
               <InputField label="Full Name" name="full_name" value={formData.full_name} onChange={handleChange} placeholder="Enter full name" required />
@@ -205,6 +205,7 @@ export default function RegisterStaff() {
                 type="submit"
                 className="flex items-center justify-center gap-2 rounded-xl border-none bg-blue-600 px-6 py-3.5 text-sm font-semibold text-white transition-colors disabled:cursor-not-allowed disabled:opacity-60 max-sm:w-full hover:bg-blue-700"
                 disabled={loading}
+                data-ga-button="register_staff_submit"
               >
                 {loading ? (
                   <>

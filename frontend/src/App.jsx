@@ -23,11 +23,13 @@ import Broadcast from './pages/admin/Broadcast'
 import Changelog from './pages/Changelog'
 import ToastContainer from './components/ToastContainer'
 import { SettingsProvider } from './hooks/useSettings.js'
+import RouteTracker from './components/RouteTracker'
 
 function App() {
   return (
     <BrowserRouter>
       <SettingsProvider>
+        <RouteTracker />
         <ToastContainer />
         <Routes>
           <Route path="/" element={<Login />} />

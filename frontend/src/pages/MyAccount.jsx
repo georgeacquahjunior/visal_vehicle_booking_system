@@ -136,7 +136,7 @@ function MyAccount() {
               <h2 className="m-0 text-xl font-bold text-[#11233f]">Profile</h2>
             </div>
 
-            <form onSubmit={handleProfileSubmit} className="flex flex-col gap-4">
+            <form onSubmit={handleProfileSubmit} className="flex flex-col gap-4" data-ga-form="account_profile_update">
               <label className="block">
                 <span className={labelClass}>Full name</span>
                 <input
@@ -166,6 +166,7 @@ function MyAccount() {
                   type="submit"
                   className="inline-flex min-h-11 items-center justify-center rounded-xl border-none bg-[#1469e1] px-6 text-sm font-bold text-white hover:bg-[#115cc7] disabled:cursor-not-allowed disabled:opacity-60"
                   disabled={savingProfile || loading}
+                  data-ga-button="save_profile_changes"
                 >
                   {savingProfile ? "Saving..." : "Save changes"}
                 </button>
@@ -185,7 +186,7 @@ function MyAccount() {
               Password changes are temporarily unavailable.
             </p>
 
-            <form onSubmit={handlePasswordSubmit} className="flex flex-col gap-4">
+            <form onSubmit={handlePasswordSubmit} className="flex flex-col gap-4" data-ga-form="account_password_change">
               <fieldset disabled className="contents">
                 <label className="block">
                   <span className={labelClass}>Current password</span>

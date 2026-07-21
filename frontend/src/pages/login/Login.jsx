@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import logo from "../../assets/visal_logo.webp";
 import bgImage from "../../assets/bus.png";
 import { useLocation, useNavigate } from "react-router-dom";
+import { trackFormSubmit, trackButtonClick } from "../../utils/analytics";
 import Footer from "../../components/Footer";
 import { loginUser } from "../../utils/login";
 
@@ -19,6 +20,7 @@ function Login() {
 
   const handleSubmit = (e) => {
     e.preventDefault();
+    trackFormSubmit('login', { staff_id });
     loginUser(staff_id, password, setError, setLoading, navigate);
   };
 
@@ -104,6 +106,7 @@ function Login() {
             <button
               type="submit"
               disabled={loading}
+              onClick={() => trackButtonClick('sign_in_button')}
               className="w-full h-12 rounded-xl bg-[#289aff] text-white font-semibold flex items-center justify-center gap-2 hover:bg-[#0a7cff] disabled:bg-blue-300 disabled:cursor-not-allowed transition"
             >
               {loading ? "Signing in..." : "Sign In"}

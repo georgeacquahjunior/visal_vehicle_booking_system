@@ -253,7 +253,7 @@ function Booking() {
       </section>
 
       <div className="mt-5 grid grid-cols-1 gap-5 xl:grid-cols-[minmax(0,1.6fr)_minmax(320px,0.9fr)]">
-        <form className="flex flex-col rounded-3xl border border-slate-200 bg-white" onSubmit={handleSubmit}>
+        <form className="flex flex-col rounded-3xl border border-slate-200 bg-white" onSubmit={handleSubmit} data-ga-form="booking_request">
           <div className="p-7">
             <div className="mb-6 flex items-center gap-3">
               <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-blue-700">
@@ -404,6 +404,7 @@ function Booking() {
               type="submit"
               className="min-h-12 cursor-pointer rounded-xl border-none bg-blue-600 px-7 py-3.5 text-sm font-bold text-white transition-colors hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
               disabled={loading}
+              data-ga-button="submit_booking_request"
             >
               {loading ? "Submitting..." : "Submit Request"}
             </button>

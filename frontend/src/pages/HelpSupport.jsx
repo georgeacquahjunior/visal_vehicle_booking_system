@@ -111,7 +111,7 @@ function HelpSupport() {
         </div>
       </section>
 
-      <form className="mt-5 rounded-3xl border border-slate-200 bg-white p-7" onSubmit={handleSubmit}>
+      <form className="mt-5 rounded-3xl border border-slate-200 bg-white p-7" onSubmit={handleSubmit} data-ga-form="support_message">
         <div className="mb-5 flex items-center gap-3">
           <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-blue-700">
             <Send size={18} />
@@ -152,6 +152,7 @@ function HelpSupport() {
             type="submit"
             className="min-h-12 cursor-pointer rounded-xl border-none bg-[#1469e1] px-7 py-3.5 text-[15px] font-bold text-white hover:bg-[#115cc7] disabled:cursor-not-allowed disabled:[filter:grayscale(0.15)_brightness(0.9)]"
             disabled={submitting}
+            data-ga-button="send_support_message"
           >
             {submitting ? "Sending..." : "Send Message"}
           </button>

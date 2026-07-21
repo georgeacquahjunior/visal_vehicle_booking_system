@@ -496,6 +496,7 @@ function ViewBookings() {
                   className="rounded-xl bg-rose-700 px-5 py-3 text-sm font-bold text-white disabled:cursor-not-allowed disabled:opacity-60"
                   onClick={confirmCancel}
                   disabled={Boolean(processingId)}
+                  data-ga-button="confirm_cancel_booking"
                 >
                   {processingId ? "Cancelling..." : "Cancel booking"}
                 </button>

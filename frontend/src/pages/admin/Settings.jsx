@@ -73,10 +73,10 @@ function Settings() {
   );
 }
 
-function SettingsSection({ children, onSubmit, saving, subtitle, title }) {
+function SettingsSection({ children, formName, onSubmit, saving, subtitle, title }) {
   return (
     <section className="rounded-3xl border border-slate-200 bg-white p-6">
-      <form onSubmit={onSubmit}>
+      <form onSubmit={onSubmit} data-ga-form={`settings_${formName}`}>
         <div className="mb-5">
           <h2 className="m-0 text-lg font-bold text-[#11233f]">{title}</h2>
           <p className="m-0 mt-0.5 text-sm text-slate-500">{subtitle}</p>
@@ -89,6 +89,7 @@ function SettingsSection({ children, onSubmit, saving, subtitle, title }) {
             type="submit"
             className="rounded-xl bg-[#1469e1] px-5 py-2.5 text-sm font-bold text-white hover:bg-[#115cc7] disabled:cursor-not-allowed disabled:opacity-60"
             disabled={saving}
+            data-ga-button={`save_settings_${formName}`}
           >
             {saving ? "Saving..." : "Save changes"}
           </button>
@@ -161,6 +162,7 @@ function BookingRulesSection({ refetch, settings }) {
   return (
     <SettingsSection
       icon={CalendarClock}
+      formName="booking_rules"
       onSubmit={handleSubmit}
       saving={saving}
       subtitle="Control when and how far ahead staff can book a vehicle"
@@ -239,6 +241,7 @@ function ScheduleDefaultsSection({ refetch, settings }) {
   return (
     <SettingsSection
       icon={CalendarRange}
+      formName="schedule_defaults"
       onSubmit={handleSubmit}
       saving={saving}
       subtitle="Choose how the Schedule page opens for staff and admins"
@@ -320,7 +323,7 @@ function NotificationsSection({ refetch, settings }) {
   };
 
   return (
-    <SettingsSection icon={Bell} onSubmit={handleSubmit} saving={saving} subtitle="Control outbound email and the daily booking summary" title="Notifications">
+    <SettingsSection icon={Bell} formName="notifications" onSubmit={handleSubmit} saving={saving} subtitle="Control outbound email and the daily booking summary" title="Notifications">
       <div className="flex flex-col gap-3">
         <Toggle
           label="Enable email notifications"
@@ -377,7 +380,7 @@ function AuditRetentionSection({ refetch, settings }) {
   };
 
   return (
-    <SettingsSection icon={ScrollText} onSubmit={handleSubmit} saving={saving} subtitle="How long audit log entries are kept" title="Audit log retention">
+    <SettingsSection icon={ScrollText} formName="audit_retention" onSubmit={handleSubmit} saving={saving} subtitle="How long audit log entries are kept" title="Audit log retention">
       <Field hint="Leave blank to keep logs forever" label="Retention period (days)">
         <input
           type="number"
@@ -416,7 +419,7 @@ function ApprovalWorkflowSection({ refetch, settings }) {
   };
 
   return (
-    <SettingsSection icon={ShieldCheck} onSubmit={handleSubmit} saving={saving} subtitle="Rules admins must follow when reviewing booking requests" title="Approval workflow">
+    <SettingsSection icon={ShieldCheck} formName="approval_workflow" onSubmit={handleSubmit} saving={saving} subtitle="Rules admins must follow when reviewing booking requests" title="Approval workflow">
       <Toggle
         label="Require a reason when declining a booking"
         checked={Boolean(form.require_decline_reason)}
@@ -450,7 +453,7 @@ function BrandingSection({ refetch, settings }) {
   };
 
   return (
-    <SettingsSection icon={Palette} onSubmit={handleSubmit} saving={saving} subtitle="Organization name and contact details shown across the app" title="Branding">
+    <SettingsSection icon={Palette} formName="branding" onSubmit={handleSubmit} saving={saving} subtitle="Organization name and contact details shown across the app" title="Branding">
       <div className="grid gap-4 sm:grid-cols-2">
         <Field label="Organization name">
           <input type="text" className={inputClass} value={form.org_name || ""} onChange={(e) => setForm((f) => ({ ...f, org_name: e.target.value }))} />
