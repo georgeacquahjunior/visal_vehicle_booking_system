@@ -424,7 +424,7 @@ function Approvals() {
             <button type="button" className="rounded-xl border border-slate-200 bg-white px-5 py-3 text-sm font-bold text-slate-600 hover:bg-slate-50" onClick={() => setApproveDialogOpen(false)} disabled={Boolean(processingId)}>
               Cancel
             </button>
-            <button type="button" className="rounded-xl bg-emerald-700 px-5 py-3 text-sm font-bold text-white disabled:cursor-not-allowed disabled:opacity-60" onClick={confirmApprove} disabled={Boolean(processingId)}>
+            <button type="button" className="rounded-xl bg-emerald-700 px-5 py-3 text-sm font-bold text-white disabled:cursor-not-allowed disabled:opacity-60" onClick={confirmApprove} disabled={Boolean(processingId)} data-ga-button="confirm_approve_booking">
               {processingId ? "Processing..." : "Confirm approval"}
             </button>
           </div>
@@ -448,7 +448,7 @@ function Approvals() {
             <button type="button" className="rounded-xl border border-slate-200 bg-white px-5 py-3 text-sm font-bold text-slate-600 hover:bg-slate-50" onClick={() => setDeclineDialogOpen(false)} disabled={Boolean(processingId)}>
               Cancel
             </button>
-            <button type="button" className="rounded-xl bg-rose-700 px-5 py-3 text-sm font-bold text-white disabled:cursor-not-allowed disabled:opacity-60" onClick={confirmDecline} disabled={Boolean(processingId) || !declineReason.trim()}>
+            <button type="button" className="rounded-xl bg-rose-700 px-5 py-3 text-sm font-bold text-white disabled:cursor-not-allowed disabled:opacity-60" onClick={confirmDecline} disabled={Boolean(processingId) || !declineReason.trim()} data-ga-button="confirm_decline_booking">
               {processingId ? "Processing..." : "Decline booking"}
             </button>
           </div>
@@ -623,10 +623,10 @@ function BookingDetailsDialog({ booking, onApprove, onClose, onDecline }) {
           </button>
           {isPending && !isPastBooking(booking.date) && (
             <>
-              <button type="button" className="rounded-xl border border-rose-200 bg-white px-5 py-3 text-sm font-bold text-rose-700 hover:bg-rose-50" onClick={onDecline}>
+              <button type="button" className="rounded-xl border border-rose-200 bg-white px-5 py-3 text-sm font-bold text-rose-700 hover:bg-rose-50" onClick={onDecline} data-ga-button="decline_booking_from_details">
                 Decline
               </button>
-              <button type="button" className="rounded-xl bg-emerald-700 px-5 py-3 text-sm font-bold text-white hover:bg-emerald-800" onClick={onApprove}>
+              <button type="button" className="rounded-xl bg-emerald-700 px-5 py-3 text-sm font-bold text-white hover:bg-emerald-800" onClick={onApprove} data-ga-button="approve_booking_from_details">
                 Approve
               </button>
             </>

@@ -332,7 +332,7 @@ function Reports() {
             <button type="button" onClick={resetFilters} className="rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-bold text-slate-600 hover:bg-slate-50">
               Reset
             </button>
-            <button type="button" onClick={exportToCSV} className="inline-flex items-center gap-2 rounded-xl bg-[#1469e1] px-4 py-2.5 text-sm font-bold text-white hover:bg-[#115cc7]">
+            <button type="button" onClick={exportToCSV} className="inline-flex items-center gap-2 rounded-xl bg-[#1469e1] px-4 py-2.5 text-sm font-bold text-white hover:bg-[#115cc7]" data-ga-button="reports_export_csv">
               <Download size={16} />
               Export CSV
             </button>

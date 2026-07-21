@@ -349,7 +349,7 @@ function Broadcast() {
         </div>
       </section>
 
-      <form onSubmit={handleReview} className="mt-5 grid grid-cols-1 gap-5 xl:grid-cols-2">
+      <form onSubmit={handleReview} className="mt-5 grid grid-cols-1 gap-5 xl:grid-cols-2" data-ga-form="broadcast_email_review">
         <section className="rounded-3xl border border-slate-200 bg-white p-6">
           <h2 className="m-0 mb-5 text-xl font-bold text-[#11233f]">Compose</h2>
 
@@ -510,6 +510,7 @@ function Broadcast() {
                 onClick={handleSendTest}
                 disabled={sendingTest}
                 className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-5 text-sm font-bold text-slate-600 hover:border-[#1469e1] hover:text-[#1469e1] disabled:cursor-not-allowed disabled:opacity-60"
+                data-ga-button="broadcast_send_test"
               >
                 <FlaskConical size={16} />
                 {sendingTest ? "Sending test..." : "Send test to me"}
@@ -517,6 +518,7 @@ function Broadcast() {
               <button
                 type="submit"
                 className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border-none bg-[#1469e1] px-6 text-sm font-bold text-white hover:bg-[#115cc7]"
+                data-ga-button="broadcast_review_and_send"
               >
                 <Send size={16} />
                 Review &amp; send
@@ -573,6 +575,7 @@ function Broadcast() {
                 className="rounded-xl bg-[#1469e1] px-5 py-3 text-sm font-bold text-white disabled:cursor-not-allowed disabled:opacity-60"
                 onClick={handleSend}
                 disabled={sending}
+                data-ga-button="broadcast_confirm_send"
               >
                 {sending ? "Sending..." : "Send email"}
               </button>

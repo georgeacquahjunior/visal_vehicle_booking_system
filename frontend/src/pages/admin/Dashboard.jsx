@@ -459,7 +459,7 @@ function Dashboard() {
                 <button type="button" className="rounded-xl border border-slate-200 bg-white px-5 py-3 text-sm font-bold text-slate-600 hover:bg-slate-50" onClick={() => setApproveTarget(null)} disabled={Boolean(processingId)}>
                   Cancel
                 </button>
-                <button type="button" className="rounded-xl bg-emerald-700 px-5 py-3 text-sm font-bold text-white disabled:cursor-not-allowed disabled:opacity-60" onClick={confirmApprove} disabled={Boolean(processingId)}>
+                <button type="button" className="rounded-xl bg-emerald-700 px-5 py-3 text-sm font-bold text-white disabled:cursor-not-allowed disabled:opacity-60" onClick={confirmApprove} disabled={Boolean(processingId)} data-ga-button="dashboard_confirm_approve_booking">
                   {processingId ? "Processing..." : "Confirm approval"}
                 </button>
               </div>
@@ -503,7 +503,7 @@ function Dashboard() {
                 <button type="button" className="rounded-xl border border-slate-200 bg-white px-5 py-3 text-sm font-bold text-slate-600 hover:bg-slate-50" onClick={() => setDeclineTarget(null)} disabled={Boolean(processingId)}>
                   Cancel
                 </button>
-                <button type="button" className="rounded-xl bg-rose-700 px-5 py-3 text-sm font-bold text-white disabled:cursor-not-allowed disabled:opacity-60" onClick={confirmDecline} disabled={Boolean(processingId) || !declineReason.trim()}>
+                <button type="button" className="rounded-xl bg-rose-700 px-5 py-3 text-sm font-bold text-white disabled:cursor-not-allowed disabled:opacity-60" onClick={confirmDecline} disabled={Boolean(processingId) || !declineReason.trim()} data-ga-button="dashboard_confirm_decline_booking">
                   {processingId ? "Processing..." : "Decline booking"}
                 </button>
               </div>
